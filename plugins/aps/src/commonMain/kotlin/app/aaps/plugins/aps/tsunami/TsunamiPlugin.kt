@@ -465,7 +465,7 @@ open class TsunamiPlugin(
             deltaReductionPCT = 1.0
             SMBcap = preferences.get(DoubleKey.TsuSMBCap) //MP: User-set max SMB size for Tsunami.
             if (preferences.get(BooleanKey.TsuSMBscaling)) {
-                SMBcap = (SMBcap * min(profile.percentage.toDouble(), 130.0)/100.0) //SMBcap grows and shrinks with profile percentage;
+                SMBcap = TsunamiSmbCapScaling.scaledSmbCap(SMBcap, epsProfile.value.originalPercentage) //SMBcap grows and shrinks with profile percentage;
             }
             insulinReqPCT = preferences.get(IntKey.TsuInsReqPCT).toDouble() / 100.0 // User-set percentage to modify insulin required
             activityTarget = preferences.get(IntKey.TsuActivityTarget).toDouble() / 100.0 // MP for small deltas
@@ -473,7 +473,7 @@ open class TsunamiPlugin(
             deltaReductionPCT = 0.5
             SMBcap = preferences.get(DoubleKey.WaveSMBCap) //MP: User-set may SMB size for Wave.
             if (preferences.get(BooleanKey.WaveSMBCapScaling)) {
-                SMBcap = (SMBcap * min(profile.percentage.toDouble(), 130.0)/100.0) //SMBcap grows and shrinks with profile percentage;
+                SMBcap = TsunamiSmbCapScaling.scaledSmbCap(SMBcap, epsProfile.value.originalPercentage) //SMBcap grows and shrinks with profile percentage;
             }
             insulinReqPCT = preferences.get(IntKey.WaveInsReqPCT).toDouble() / 100.0 // User-set percentage to modify insulin required
             activityTarget = preferences.get(IntKey.WaveActivityTarget).toDouble() / 100.0 // MP for small deltas
