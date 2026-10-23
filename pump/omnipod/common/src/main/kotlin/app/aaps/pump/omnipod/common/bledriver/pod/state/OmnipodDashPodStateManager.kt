@@ -95,6 +95,16 @@ interface OmnipodDashPodStateManager {
     fun updateFromAlarmStatusResponse(response: AlarmStatusResponse)
     fun updateFromPairing(uniqueId: Id, pairResult: PairResult)
     fun reset()
+
+    /**
+     * Forget the pod state held in memory, so the next read loads it again from preferences.
+     *
+     * The state is read once and then kept in memory. A settings import writes a new pod state to
+     * preferences without restarting the app, so without this the import is ignored, and the next
+     * store would write the old state over the imported one. Call [onStart] after this, because the
+     * realtime stamps in the loaded state come from another process.
+     */
+    fun reloadFromStore()
     fun connectionSuccessRatio(): Float
     fun incrementSuccessfulConnectionAttemptsAfterRetries()
     fun incrementFailedConnectionsAfterRetries()

@@ -988,6 +988,10 @@ class OmnipodDashPodStateManagerImpl(
         store()
     }
 
+    override fun reloadFromStore() {
+        synchronized(this) { _podState = null }
+    }
+
     private fun store() {
         try {
             val cleanPodState = podState.copy(ltk = byteArrayOf()) // do not log ltk

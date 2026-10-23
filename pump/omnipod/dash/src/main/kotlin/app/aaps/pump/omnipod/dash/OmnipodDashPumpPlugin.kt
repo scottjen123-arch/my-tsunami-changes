@@ -521,6 +521,36 @@ class OmnipodDashPumpPlugin(
         handler = null
     }
 
+    /** The stored pod state before an import, so [afterImport] can tell if the import changed it. */
+    private var podStateBeforeImport: String? = null
+
+    override fun beforeImport() {
+        podStateBeforeImport = preferences.get(DashStringNonPreferenceKey.PodState)
+    }
+
+    /**
+     * Picks up a pod state that came in with an import.
+     *
+     * The app is not restarted after an import, and [podStateManager] keeps the pod state in memory.
+     * Without this, an imported pod is not seen, and the next store writes the old state over it. When
+     * the import did not change the pod state (for example "keep pump settings"), nothing is done, so
+     * a working connection to the pod is not dropped.
+     */
+    override fun afterImport() {
+        val before = podStateBeforeImport
+        podStateBeforeImport = null
+        if (preferences.get(DashStringNonPreferenceKey.PodState) == before) return
+
+        aapsLogger.info(LTag.PUMP, "Pod state changed by import, loading it again")
+        // A connection that is open now belongs to the old pod
+        omnipodManager.disconnect(true)
+        podStateManager.reloadFromStore()
+        // Same fix of the realtime stamps as at start-up, because they come from another process
+        podStateManager.onStart()
+        syncPumpFlows()
+        rxBus.send(EventRefreshOverview("Dash pod state imported", false))
+    }
+
     private fun deliverBasalCorrection(): PumpEnactResult {
         if (!podStateManager.needsBasalCorrection()) {
             aapsLogger.info(LTag.PUMP, "Basal correction no longer appropriate")

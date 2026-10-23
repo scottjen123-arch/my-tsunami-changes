@@ -18,6 +18,7 @@ import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.pump.omnipod.common.bledriver.pod.definition.ActivationProgress
 import app.aaps.pump.omnipod.common.bledriver.pod.definition.BasalProgram
 import app.aaps.pump.omnipod.common.bledriver.pod.state.OmnipodDashPodStateManager
+import app.aaps.pump.omnipod.common.keys.DashStringNonPreferenceKey
 import app.aaps.pump.omnipod.dash.driver.OmnipodDashManager
 import app.aaps.pump.omnipod.dash.history.DashHistory
 import app.aaps.pump.omnipod.dash.history.database.DashHistoryDatabase
@@ -26,6 +27,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 /**
@@ -38,17 +41,21 @@ import org.mockito.kotlin.whenever
 class OmnipodDashPumpPluginStateTest {
 
     private lateinit var podStateManager: OmnipodDashPodStateManager
+    private lateinit var preferences: Preferences
+    private lateinit var omnipodManager: OmnipodDashManager
     private lateinit var sut: OmnipodDashPumpPlugin
 
     @BeforeEach
     fun setUp() {
         podStateManager = mock()
+        preferences = mock()
+        omnipodManager = mock()
         sut = OmnipodDashPumpPlugin(
             aapsLogger = mock<AAPSLogger>(),
             rh = mock<ResourceHelper>(),
-            preferences = mock<Preferences>(),
+            preferences = preferences,
             commandQueue = mock<CommandQueue>(),
-            omnipodManager = mock<OmnipodDashManager>(),
+            omnipodManager = omnipodManager,
             podStateManager = podStateManager,
             history = mock<DashHistory>(),
             pumpSync = mock<PumpSync>(),
@@ -221,6 +228,40 @@ class OmnipodDashPumpPluginStateTest {
         assertThat(sut.manufacturer()).isEqualTo(ManufacturerType.Insulet)
         assertThat(sut.canHandleDST()).isFalse()
         assertThat(sut.isFakingTempsByExtendedBoluses).isFalse()
+    }
+
+    // endregion
+
+    // region import
+
+    /**
+     * The app is not restarted after an import, so a pod state that came in with the import must be
+     * read again. Otherwise the old state in memory is used and later stored over the imported one.
+     */
+    @Test
+    fun `an import that changes the pod state loads it again`() {
+        whenever(podStateManager.activationProgress).thenReturn(ActivationProgress.NOT_STARTED)
+        whenever(preferences.get(DashStringNonPreferenceKey.PodState)).thenReturn("")
+        sut.beforeImport()
+        whenever(preferences.get(DashStringNonPreferenceKey.PodState)).thenReturn("{\"uniqueId\":1234}")
+
+        sut.afterImport()
+
+        verify(omnipodManager).disconnect(true)
+        verify(podStateManager).reloadFromStore()
+        verify(podStateManager).onStart()
+    }
+
+    /** "Keep pump settings" leaves the pod state alone, so a working connection must not be dropped. */
+    @Test
+    fun `an import that keeps the pod state does nothing to the pod`() {
+        whenever(preferences.get(DashStringNonPreferenceKey.PodState)).thenReturn("{\"uniqueId\":1234}")
+        sut.beforeImport()
+
+        sut.afterImport()
+
+        verify(omnipodManager, never()).disconnect(true)
+        verify(podStateManager, never()).reloadFromStore()
     }
 
     // endregion
