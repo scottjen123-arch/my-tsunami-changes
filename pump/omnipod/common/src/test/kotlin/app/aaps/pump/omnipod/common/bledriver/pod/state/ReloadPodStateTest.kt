@@ -1,6 +1,5 @@
 package app.aaps.pump.omnipod.common.bledriver.pod.state
 
-import app.aaps.core.interfaces.configuration.Config
 import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.pump.omnipod.common.bledriver.pod.definition.ActivationProgress
 import app.aaps.pump.omnipod.common.keys.DashStringNonPreferenceKey
@@ -21,12 +20,11 @@ import org.mockito.Mockito.`when`
 class ReloadPodStateTest : TestBase() {
 
     @Mock lateinit var preferences: Preferences
-    @Mock lateinit var config: Config
 
     private lateinit var sut: OmnipodDashPodStateManagerImpl
 
     @BeforeEach fun setUp() {
-        sut = OmnipodDashPodStateManagerImpl(aapsLogger, rxBus, preferences, config)
+        sut = OmnipodDashPodStateManagerImpl(aapsLogger, rxBus, preferences)
     }
 
     private fun storePodState(podState: OmnipodDashPodStateManagerImpl.PodState) {
