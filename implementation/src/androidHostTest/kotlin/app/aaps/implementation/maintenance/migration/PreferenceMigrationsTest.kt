@@ -7,6 +7,7 @@ import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.core.interfaces.profile.ProfileUtil
 import app.aaps.core.interfaces.tempTargets.toTTPresets
 import app.aaps.core.interfaces.utils.DateUtil
+import app.aaps.core.keys.IntKey
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
@@ -372,6 +373,46 @@ class PreferenceMigrationsTest {
         val presets = store.getString("temp_target_presets", "").toTTPresets()
         assertThat(presets.single().targetValue).isEqualTo(100.0)
         verify(profileUtil).convertToMgdlDetect(100.0)
+    }
+
+    // ----- Wave times -----
+
+    @Test fun `wave times in hours become minutes from midnight`() = runTest {
+        val store = storeOf("key_wave_start" to 6.0, "key_wave_end" to "21.5")
+
+        sut().migrate(store)
+
+        assertThat(store.getInt(IntKey.WaveStart.key, -1)).isEqualTo(360)
+        assertThat(store.getInt(IntKey.WaveEnd.key, -1)).isEqualTo(1290)
+        assertThat(store.contains("key_wave_start")).isFalse()
+        assertThat(store.contains("key_wave_end")).isFalse()
+    }
+
+    @Test fun `a wave time already set in minutes is not overwritten`() = runTest {
+        val store = storeOf("key_wave_start" to 6.0, IntKey.WaveStart.key to 480)
+
+        sut().migrate(store)
+
+        assertThat(store.getInt(IntKey.WaveStart.key, -1)).isEqualTo(480)
+        assertThat(store.contains("key_wave_start")).isFalse()
+    }
+
+    @Test fun `a wave time that is not a number is left in place`() = runTest {
+        val store = storeOf("key_wave_start" to "morning")
+
+        sut().migrate(store)
+
+        assertThat(store.contains(IntKey.WaveStart.key)).isFalse()
+        assertThat(store.getString("key_wave_start", "")).isEqualTo("morning")
+    }
+
+    @Test fun `no wave times are written when there were none`() = runTest {
+        val store = storeOf()
+
+        sut().migrate(store)
+
+        assertThat(store.contains(IntKey.WaveStart.key)).isFalse()
+        assertThat(store.contains(IntKey.WaveEnd.key)).isFalse()
     }
 
 }

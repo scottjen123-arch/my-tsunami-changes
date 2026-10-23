@@ -25,6 +25,7 @@ import app.aaps.core.keys.StringKey
 import app.aaps.core.keys.StringNonKey
 import app.aaps.core.keys.UnitDoubleKey
 import dev.zacsweers.metro.Inject
+import kotlin.math.roundToInt
 
 /**
  * The preference migrations, as an ordered list of functions over the store they are given.
@@ -118,6 +119,25 @@ class PreferenceMigrations(
         tidepool(sp)
         apsMode(sp)
         tempTargetPresets(sp)
+        waveTimes(sp)
+    }
+
+    /**
+     * The Wave start and end times were decimal hours and are now minutes from midnight, under new names.
+     *
+     * 6.0 becomes 360 and 21.5 becomes 1290. A new value that is already set is never overwritten: the user
+     * chose it in this build. The old names are removed in both cases, because nothing reads them any more.
+     */
+    private fun waveTimes(sp: KeyValueStore) {
+        listOf(LEGACY_WAVE_START to IntKey.WaveStart.key, LEGACY_WAVE_END to IntKey.WaveEnd.key).forEach { (oldName, newName) ->
+            val stored = sp.getAll()[oldName] ?: return@forEach
+            if (!sp.contains(newName)) {
+                val hours = LegacyPreferenceValue.asDouble(stored)
+                    ?: return@forEach skip(oldName, "expected a number, found ${LegacyPreferenceValue.describeType(stored)}")
+                sp.putInt(newName, (hours * 60).roundToInt().coerceIn(0, MINUTES_PER_DAY - 1))
+            }
+            sp.remove(oldName)
+        }
     }
 
     /**
@@ -473,6 +493,11 @@ class PreferenceMigrations(
     private companion object {
 
         const val LOCAL_PROFILE_PREFIX = "LocalProfile_"
+
+        /** The Wave times as decimal hours, before they became [IntKey.WaveStart] and [IntKey.WaveEnd]. */
+        const val LEGACY_WAVE_START = "key_wave_start"
+        const val LEGACY_WAVE_END = "key_wave_end"
+        const val MINUTES_PER_DAY = 24 * 60
 
         /** The five schedules a profile carries, and the key each one moves to. */
         val SCHEDULE_FIELDS = mapOf(
