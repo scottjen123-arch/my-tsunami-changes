@@ -663,7 +663,8 @@ open class TsunamiPlugin(
     override suspend fun applyMaxIOBConstraints(maxIob: Constraint<Double>): Constraint<Double> {
         if (isEnabled()) {
             val maxIobPref = preferences.get(DoubleKey.ApsSmbMaxIob)
-            maxIob.setIfSmaller(maxIobPref, rh.gs(ApsStrings.limiting_iob, maxIobPref, rh.gs(ApsStrings.maxvalueinpreferences)), this)
+            if (!TsunamiMaxIobScaling.applyScaled(maxIob, maxIobPref, preferences, profileFunction, persistenceLayer, dateUtil, rh, this)) // Local change: max IOB follows the profile percentage
+                maxIob.setIfSmaller(maxIobPref, rh.gs(ApsStrings.limiting_iob, maxIobPref, rh.gs(ApsStrings.maxvalueinpreferences)), this)
             maxIob.setIfSmaller(hardLimits.maxIobSMB(), rh.gs(ApsStrings.limiting_iob, hardLimits.maxIobSMB(), rh.gs(ApsStrings.hardlimit)), this)
         }
         return maxIob

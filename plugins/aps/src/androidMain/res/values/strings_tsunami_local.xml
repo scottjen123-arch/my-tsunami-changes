@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Local strings on top of the upstream fork. Kept out of strings.xml so upstream and Crowdin changes there never conflict. -->
+<resources>
+    <string name="max_iob_scaled_tsunami" comment="Ends the sentence 'Limiting IOB to %1$.1f U because of …'. %1$d=profile percentage used for the scaling. Example: max value in preferences at 130% profile during Tsunami">max value in preferences at %1$d%% profile during Tsunami</string>
+</resources>
