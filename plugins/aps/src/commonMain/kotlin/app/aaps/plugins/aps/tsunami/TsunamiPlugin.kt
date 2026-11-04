@@ -127,7 +127,7 @@ open class TsunamiPlugin(
         .preferencesVisibleInSimpleMode(false)
         .showInList { config.APS && config.isEngineeringMode() && config.isDev() }
         .description(ApsStrings.description_tsunami),
-    ownPreferences = ApsIntentKey.entries,
+    ownPreferences = ApsIntentKey.entries + TsunamiLocalBooleanKey.entries + TsunamiLocalDoubleKey.entries, // Local change: extra max IOB settings
     aapsLogger, rh, preferences, notificationManager
 ), APS, PluginConstraints {
 
@@ -731,6 +731,8 @@ open class TsunamiPlugin(
                 items = listOf(
                     DoubleKey.TsuSMBCap,
                     BooleanKey.TsuSMBscaling,
+                    TsunamiLocalBooleanKey.HighBgExtraMaxIob, // Local change
+                    TsunamiLocalDoubleKey.HighBgExtraMaxIobAmount, // Local change
                     DoubleKey.TsuButtonIncrement1,
                     DoubleKey.TsuButtonIncrement2,
                     DoubleKey.TsuButtonIncrement3,

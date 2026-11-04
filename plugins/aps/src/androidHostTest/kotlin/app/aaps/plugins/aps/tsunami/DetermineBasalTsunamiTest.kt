@@ -28,7 +28,7 @@ class DetermineBasalTsunamiTest : TestBaseWithProfile() {
 
     @BeforeEach
     fun setup() {
-        sut = DetermineBasalTsunami(profileUtil, fabricPrivacy)
+        sut = DetermineBasalTsunami(profileUtil, fabricPrivacy, TsunamiHighBgMaxIob(preferences, hardLimits))
     }
 
     /** Flat-ish history (newest first) ending at [bg], rising by [delta] per reading, 19 readings (90 min). */

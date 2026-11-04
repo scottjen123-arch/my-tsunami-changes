@@ -33,7 +33,8 @@ import kotlin.math.roundToLong
 @Inject
 class DetermineBasalTsunami(
     private val profileUtil: ProfileUtil,
-    private val fabricPrivacy: FabricPrivacy
+    private val fabricPrivacy: FabricPrivacy,
+    private val highBgMaxIob: TsunamiHighBgMaxIob // Local change: extra max IOB above 180 in a session
 ) {
     private var consoleError = mutableListOf<String>()
     private var consoleLog = mutableListOf<String>()
@@ -275,7 +276,7 @@ class DetermineBasalTsunami(
         }
 
         // TODO eliminate
-        val max_iob = profile.max_iob // maximum amount of non-bolus IOB OpenAPS will ever deliver
+        var max_iob = profile.max_iob // maximum amount of non-bolus IOB OpenAPS will ever deliver. Local change: var, see highBgMaxIob below
 
         // if min and max are set, then set target to their average
         var target_bg = (profile.min_bg + profile.max_bg) / 2
@@ -493,6 +494,7 @@ class DetermineBasalTsunami(
         )
         val safetyAllowance = tsunamiSafety.allowance
         if (tsunamiModeID > 0) consoleError.addAll(tsunamiSafety.log)
+        max_iob = highBgMaxIob.maxIob(max_iob, bg, glucose_status.delta, tsunamiModeID, consoleError) // Local change: after TsunamiSafety on purpose, so the dose size keeps using the normal max IOB
 
         // MP Early-stage decision between oref1 and tsunami loop algorithm (skip calculations if basic conditions aren't met)
         var activityController = false
