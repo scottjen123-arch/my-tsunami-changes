@@ -50,6 +50,8 @@ import app.aaps.wear.complications.SgvComplicationExt1
 import app.aaps.wear.complications.SgvComplicationExt2
 import app.aaps.wear.complications.SgvLargeComplication
 import app.aaps.wear.complications.TargetComplication
+import app.aaps.wear.complications.TsunamiComplication
+import app.aaps.wear.complications.TsunamiFaceIobComplication
 import app.aaps.wear.complications.UploaderBatteryComplication
 import app.aaps.wear.data.ComplicationDataRepository
 import app.aaps.wear.interaction.WatchfaceConfigurationActivity
@@ -238,6 +240,11 @@ class DataHandlerWear(
             preferences.put(DoubleKey.OverviewInsulinButtonIncrement2, it.insulinButtonIncrement2)
             preferences.put(IntKey.OverviewCarbsButtonIncrement1, it.carbsButtonIncrement1)
             preferences.put(IntKey.OverviewCarbsButtonIncrement2, it.carbsButtonIncrement2)
+            // Local change: Tsunami and prebolus from the watch
+            preferences.put(IntKey.TsuDefaultDuration, it.tsunamiDefaultDuration)
+            preferences.put(DoubleKey.TsuButtonIncrement1, it.tsunamiButtonIncrement1)
+            preferences.put(DoubleKey.TsuButtonIncrement2, it.tsunamiButtonIncrement2)
+            preferences.put(DoubleKey.TsuButtonIncrement3, it.tsunamiButtonIncrement3)
             // The Watch Face Push face the wearer chose on the phone. Stored whatever the watch
             // can do with it, so a watch updated to Wear OS 6 later installs the chosen face on
             // its next start; swapped now when the watch can. Either way the phone is told what
@@ -246,6 +253,13 @@ class DataHandlerWear(
             dataStoreScope.launch {
                 if (faceChanged) watchFacePushHelper.installOrUpdate()
                 else watchFacePushHelper.reportStatus()
+            }
+        }
+        // Local change: Tsunami and prebolus from the watch
+        onEvent<EventData.TsunamiState> {
+            dataStoreScope.launch {
+                complicationDataRepository.updateTsunamiState(it)
+                ComplicationDataSourceUpdateRequester.create(context, ComponentName(context, TsunamiComplication::class.java)).requestUpdateAll()
             }
         }
         onEvent<EventData.QuickWizard> {
@@ -461,7 +475,10 @@ class DataHandlerWear(
             // Battery complication
             UploaderBatteryComplication::class.java,
             // Running mode complication
-            RunningModeComplication::class.java
+            RunningModeComplication::class.java,
+            // Local change: the data slots of the Tsunami face
+            TsunamiComplication::class.java,
+            TsunamiFaceIobComplication::class.java,
             // Note: WallpaperComplication is abstract, subclasses will auto-update
         )
 

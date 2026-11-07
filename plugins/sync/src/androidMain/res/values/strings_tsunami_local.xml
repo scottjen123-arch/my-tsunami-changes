@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Local change: Tsunami and prebolus from the watch. In its own file so that merges from upstream stay simple. -->
+<resources>
+    <string name="wear_tsunami_already_running">Tsunami is already running. Nothing was changed.</string>
+    <string name="wear_tsunami_not_running">Tsunami is not running.</string>
+    <string name="wear_control_off_on_phone">Wear control is off on the phone.</string>
+    <string name="wear_tsunami_not_active_aps">Tsunami is not the active APS on the phone.</string>
+</resources>

@@ -27,6 +27,9 @@ import app.aaps.wear.complications.SgvComplicationExt1
 import app.aaps.wear.complications.SgvComplicationExt2
 import app.aaps.wear.complications.SgvLargeComplication
 import app.aaps.wear.complications.TargetComplication
+import app.aaps.wear.complications.TsunamiBolusComplication
+import app.aaps.wear.complications.TsunamiComplication
+import app.aaps.wear.complications.TsunamiFaceIobComplication
 import app.aaps.wear.complications.UploaderBatteryComplication
 import app.aaps.wear.complications.WallpaperDarkComplication
 import app.aaps.wear.complications.WallpaperGrayComplication
@@ -46,6 +49,7 @@ import app.aaps.wear.interaction.actions.RunningModePickerActivity
 import app.aaps.wear.interaction.actions.RunningModeTimedActivity
 import app.aaps.wear.interaction.actions.TempTargetActivity
 import app.aaps.wear.interaction.actions.TreatmentActivity
+import app.aaps.wear.interaction.actions.TsunamiActivity
 import app.aaps.wear.interaction.actions.WizardActivity
 import app.aaps.wear.interaction.activities.BgGraphActivity
 import app.aaps.wear.interaction.activities.CwfRenderPreviewActivity
@@ -466,6 +470,31 @@ object WearMemberInjectors {
     @IntoMap
     @ClassKey(UploaderBatteryComplication::class)
     fun bindUploaderBatteryComplication(injector: MembersInjector<UploaderBatteryComplication>): MembersInjector<*> = injector
+
+    // Local change: Tsunami and prebolus from the watch
+    @Provides
+    @FeatureMemberInjectors
+    @IntoMap
+    @ClassKey(TsunamiActivity::class)
+    fun bindTsunamiActivity(injector: MembersInjector<TsunamiActivity>): MembersInjector<*> = injector
+
+    @Provides
+    @FeatureMemberInjectors
+    @IntoMap
+    @ClassKey(TsunamiComplication::class)
+    fun bindTsunamiComplication(injector: MembersInjector<TsunamiComplication>): MembersInjector<*> = injector
+
+    @Provides
+    @FeatureMemberInjectors
+    @IntoMap
+    @ClassKey(TsunamiFaceIobComplication::class)
+    fun bindTsunamiFaceIobComplication(injector: MembersInjector<TsunamiFaceIobComplication>): MembersInjector<*> = injector
+
+    @Provides
+    @FeatureMemberInjectors
+    @IntoMap
+    @ClassKey(TsunamiBolusComplication::class)
+    fun bindTsunamiBolusComplication(injector: MembersInjector<TsunamiBolusComplication>): MembersInjector<*> = injector
 
     @Provides
     @FeatureMemberInjectors

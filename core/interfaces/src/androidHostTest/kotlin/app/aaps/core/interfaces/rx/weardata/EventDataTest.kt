@@ -20,6 +20,15 @@ class EventDataTest {
 
     @Test
     fun serializationTest() {
+        // Local change: Tsunami and prebolus from the watch
+        listOf(
+            EventData.ActionTsunamiPreCheck(2.0, 180),
+            EventData.ActionTsunamiStopPreCheck(1L),
+            EventData.TsunamiState(1_000L),
+        ).forEach {
+            assertThat(EventData.deserializeByte(it.serializeByte())).isEqualTo(it)
+            assertThat(EventData.deserialize(it.serialize())).isEqualTo(it)
+        }
         EventData.ActionPong(1, 2).let {
             assertThat(EventData.deserializeByte(it.serializeByte())).isEqualTo(it)
             assertThat(EventData.deserialize(it.serialize())).isEqualTo(it)

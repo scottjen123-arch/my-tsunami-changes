@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Local change: Tsunami and prebolus from the watch. In its own file so that merges from upstream stay simple. -->
+<resources>
+    <string name="label_tsunami_button">Tsunami button</string>
+    <string name="label_tsunami_face_iob">Insulin on board</string>
+    <string name="label_tsunami_face_bolus">Bolus button</string>
+    <string name="tsunami_title">Tsunami</string>
+    <string name="tsunami_prebolus">Prebolus</string>
+    <string name="tsunami_duration">Duration</string>
+    <string name="tsunami_requested">Tsunami requested</string>
+    <string name="tsunami_stop">Stop Tsunami</string>
+    <string name="tsunami_stop_requested">Stop requested</string>
+    <string name="tsunami_minutes" comment="%1$d=number of minutes. Example: 180 min">%1$d min</string>
+    <string name="tsunami_minutes_left" comment="%1$d=minutes until the session ends. Example: 45 min left">%1$d min left</string>
+    <string name="tsunami_button_text" comment="Very short button on a round watch face. Starts Tsunami mode. Keep to about 7 characters">TSUNAMI</string>
+    <string name="tsunami_button_title" comment="Very short label above the time left in a Tsunami session. Keep to about 3 characters">TSU</string>
+    <string name="tsunami_button_unknown" comment="Very short button text when the watch has lost contact with the phone and does not know if a session runs">TSU ?</string>
+    <string name="tsunami_bolus_button_text" comment="Very short button on a round watch face. Opens the bolus screen. Keep to about 5 characters">BOLUS</string>
+    <string name="tsunami_iob_title" comment="Very short label: insulin on board">IOB</string>
+    <string name="tsunami_no_value" comment="Shown in place of a value that is not known because the watch has lost contact with the phone">--</string>
+</resources>

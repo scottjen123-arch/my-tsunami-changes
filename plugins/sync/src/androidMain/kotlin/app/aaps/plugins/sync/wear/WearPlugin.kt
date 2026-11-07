@@ -1,5 +1,6 @@
 package app.aaps.plugins.sync.wear
 
+import app.aaps.core.data.model.TSU
 import app.aaps.core.interfaces.notifications.NotificationManager
 import app.aaps.core.ui.CoreUiStrings
 import app.aaps.plugins.sync.SyncStrings
@@ -185,6 +186,9 @@ class WearPlugin(
         // Push active-scene flag to wear so the tile can swap between scene list and STOP button
         scenes.activeFlow
             .collectResilient(newScope, aapsLogger, LTag.WEAR) { dataHandlerMobile.sendActiveSceneState(it) }
+        // Local change: the watch shows a session as soon as it starts or stops. drop: the first emission is not a change
+        persistenceLayer.observeChanges<TSU>().drop(1)
+            .collectResilient(newScope, aapsLogger, LTag.WEAR) { dataHandlerMobile.sendTsunamiState() }
         rxBus.toFlow(EventWearUpdateTiles::class)
             .collectResilient(newScope, aapsLogger, LTag.WEAR, start = CoroutineStart.UNDISPATCHED) { dataHandlerMobile.sendUserActions() }
         rxBus.toFlow(EventWearUpdateGui::class)

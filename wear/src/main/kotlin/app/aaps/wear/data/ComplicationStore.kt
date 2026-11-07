@@ -129,7 +129,12 @@ data class ComplicationData(
     val customWatchface: CwfData? = null,
     val customWatchfaceDefault: CwfData? = null,
     val customWatchfaceDefaultFull: CwfData? = null,
-    val lastUpdateTimestamp: Long = 0L
+    val lastUpdateTimestamp: Long = 0L,
+    /**
+     * Local change: when the running Tsunami session ends, 0 when none runs. Must stay last: protobuf
+     * numbers the fields by their order, so a field added earlier would make the stored data unreadable.
+     */
+    val tsunamiActiveUntil: Long = 0L
 )
 
 /**

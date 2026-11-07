@@ -12,12 +12,16 @@ import androidx.wear.watchface.complications.datasource.ComplicationDataSourceUp
 import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.core.interfaces.logging.LTag
 import app.aaps.core.interfaces.sharedPreferences.SP
+import app.aaps.core.keys.BooleanKey
+import app.aaps.core.keys.interfaces.Preferences
 import app.aaps.wear.R
 import app.aaps.wear.di.WearMetroActivity
+import app.aaps.wear.interaction.actions.BolusActivity
 import app.aaps.wear.interaction.actions.ECarbActivity
 import app.aaps.wear.interaction.actions.RunningModePickerActivity
 import app.aaps.wear.interaction.actions.TempTargetActivity
 import app.aaps.wear.interaction.actions.TreatmentActivity
+import app.aaps.wear.interaction.actions.TsunamiActivity
 import app.aaps.wear.interaction.actions.WizardActivity
 import app.aaps.wear.interaction.activities.BgGraphActivity
 import app.aaps.wear.interaction.activities.LoopStatusActivity
@@ -41,6 +45,7 @@ class ComplicationTapActivity : WearMetroActivity() {
     @Inject lateinit var displayFormat: DisplayFormat
     @Inject lateinit var sp: SP
     @Inject lateinit var aapsLogger: AAPSLogger
+    @Inject lateinit var preferences: Preferences // Local change
 
     companion object {
         const val EXTRA_PROVIDER_COMPONENT = "info.nightscout.androidaps.complications.action.PROVIDER_COMPONENT"
@@ -156,6 +161,15 @@ class ComplicationTapActivity : WearMetroActivity() {
             ComplicationAction.LOOP_STATUS -> intentOpen = Intent(this, LoopStatusActivity::class.java)
             ComplicationAction.RUNNING_MODE -> intentOpen = Intent(this, RunningModePickerActivity::class.java)
 
+            // Local change: these two give insulin, so they stay closed while wear control is off
+            ComplicationAction.TSUNAMI, ComplicationAction.INSULIN_ONLY -> {
+                if (!preferences.get(BooleanKey.WearControl)) {
+                    Toast.makeText(this, R.string.wear_control_not_enabled, Toast.LENGTH_LONG).show()
+                    return
+                }
+                intentOpen = Intent(this, if (action == ComplicationAction.TSUNAMI) TsunamiActivity::class.java else BolusActivity::class.java)
+            }
+
             ComplicationAction.WARNING_OLD, ComplicationAction.WARNING_SYNC -> {
                 val oneAndHalfMinuteAgo = System.currentTimeMillis() - (Constants.MINUTE_IN_MS + Constants.SECOND_IN_MS * 30)
                 val since = extras.getLong(EXTRA_COMPLICATION_SINCE, oneAndHalfMinuteAgo)
@@ -183,6 +197,8 @@ class ComplicationTapActivity : WearMetroActivity() {
         val userPrefAction = complicationTapAction
         return when (originalAction) {
             ComplicationAction.WARNING_OLD, ComplicationAction.WARNING_SYNC -> originalAction
+            // Local change: a button must do what it says, whatever the general tap setting is
+            ComplicationAction.TSUNAMI, ComplicationAction.INSULIN_ONLY -> originalAction
 
             else -> when (userPrefAction) {
                 "menu" -> ComplicationAction.MENU

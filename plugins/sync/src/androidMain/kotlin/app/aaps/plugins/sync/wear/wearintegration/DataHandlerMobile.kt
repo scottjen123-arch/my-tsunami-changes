@@ -1,6 +1,8 @@
 package app.aaps.plugins.sync.wear.wearintegration
 
 import app.aaps.core.interfaces.InterfacesStrings
+import app.aaps.core.interfaces.aps.APSResult
+import app.aaps.core.interfaces.utils.Round
 import app.aaps.core.ui.CoreUiStrings
 import app.aaps.plugins.sync.SyncStrings
 import android.app.NotificationManager
@@ -279,6 +281,15 @@ class DataHandlerMobile(
             onCommitResult(batchExecutor.commit(it.bolusId, Sources.Wear, rh.gs(CoreUiStrings.temporary_target)))
         }
         onEvent<EventData.ActionBolusPreCheck> { handleBolusPreCheck(it) }
+        // Local change: Tsunami and prebolus from the watch. The OK comes back as ActionBolusConfirmed.
+        onEvent<EventData.ActionTsunamiPreCheck> {
+            if (rejectIfNotReady()) return@onEvent
+            handleTsunamiPreCheck(it)
+        }
+        onEvent<EventData.ActionTsunamiStopPreCheck> {
+            if (rejectIfNotReady()) return@onEvent
+            handleTsunamiStopPreCheck()
+        }
         onEvent<EventData.ActionBolusConfirmed> {
             // Commit the parked dose by id through the role-transparent relay (MASTER → local deliver; CLIENT →
             // signed BolusCommit). Consume-once = no double bolus; a failure surfaces to the watch.
@@ -788,6 +799,72 @@ class DataHandlerMobile(
         else                                    -> sceneChainResolver.resolveRunnableChainTarget(state.scene)
     }
 
+    // Local change: Tsunami and prebolus from the watch. Internal so that DataHandlerMobileWearTsunamiTest can call it.
+    internal suspend fun handleTsunamiPreCheck(command: EventData.ActionTsunamiPreCheck) {
+        if (rejectTsunamiFromWatch()) return
+        if (persistenceLayer.getTsunamiActiveAt(dateUtil.now()) != null) {
+            // The watch was out of date. Starting now would silently restart the timer of the running session.
+            sendError(rh.gs(SyncStrings.wear_tsunami_already_running))
+            sendTsunamiState()
+            return
+        }
+        if (command.durationMinutes <= 0) {
+            sendError(rh.gs(CoreUiStrings.error))
+            return
+        }
+        val insulin = Round.floorTo(command.insulin, activePlugin.activePump.pumpDescription.bolusStep)
+        val actions = buildList {
+            if (insulin > 0)
+                add(
+                    BatchAction.Bolus(
+                        insulin = insulin, carbs = 0, carbsTimeOffsetMinutes = 0, carbsDurationHours = 0,
+                        recordOnly = false, notes = "", timestamp = 0L, iCfg = null
+                    )
+                )
+            add(BatchAction.Tsunami(durationMinutes = command.durationMinutes.coerceAtMost(TSUNAMI_MAX_MINUTES), notes = ""))
+        }
+        contacting()
+        val title = rh.gs(CoreUiStrings.tsunami)
+        shipPrepared(batchExecutor.prepare(actions, Sources.Wear, title), title) { EventData.ActionBolusConfirmed(it) }
+    }
+
+    // Local change: Tsunami and prebolus from the watch
+    internal suspend fun handleTsunamiStopPreCheck() {
+        if (rejectTsunamiFromWatch()) return
+        if (persistenceLayer.getTsunamiActiveAt(dateUtil.now()) == null) {
+            sendError(rh.gs(SyncStrings.wear_tsunami_not_running))
+            sendTsunamiState()
+            return
+        }
+        contacting()
+        val title = rh.gs(CoreUiStrings.tsunami)
+        val progress = batchExecutor.prepare(listOf(BatchAction.CancelTsunami), Sources.Wear, title)
+        // The batch itself has no line for a cancel. The phone's dialog adds the same line.
+        val withLine =
+            if (progress is ActionProgress.Prepared)
+                progress.copy(lines = listOf(ConfirmationLine(ConfirmationRole.NORMAL, rh.gs(CoreUiStrings.cancel_tsunami))) + progress.lines)
+            else progress
+        shipPrepared(withLine, title) { EventData.ActionBolusConfirmed(it) }
+    }
+
+    /** Local change. The watch hides these controls when wear control is off, but the phone must refuse by itself as well. */
+    private fun rejectTsunamiFromWatch(): Boolean {
+        if (!preferences.get(BooleanKey.WearControl)) {
+            sendError(rh.gs(SyncStrings.wear_control_off_on_phone))
+            return true
+        }
+        if (activePlugin.activeAPS?.algorithm != APSResult.Algorithm.TSUNAMI) {
+            sendError(rh.gs(SyncStrings.wear_tsunami_not_active_aps))
+            return true
+        }
+        return false
+    }
+
+    /** Local change: tells the watch when the running Tsunami session ends, so its face and screen can show it. */
+    suspend fun sendTsunamiState() {
+        sendToWear(EventData.TsunamiState(activeUntil = persistenceLayer.getTsunamiActiveAt(dateUtil.now())?.end ?: 0L))
+    }
+
     // internal (not private) so DataHandlerMobileWearBolusTest can drive it without RxBus scaffolding.
     internal suspend fun handleQuickWizardPreCheck(command: EventData.ActionQuickWizardPreCheck) {
         // Branch on the entry mode exactly like the phone (MainViewModel.executeQuickWizard): a fixed INSULIN/CARBS
@@ -1194,9 +1271,14 @@ class DataHandlerMobile(
                 insulinButtonIncrement2 = preferences.get(DoubleKey.OverviewInsulinButtonIncrement2),
                 carbsButtonIncrement1 = preferences.get(IntKey.OverviewCarbsButtonIncrement1),
                 carbsButtonIncrement2 = preferences.get(IntKey.OverviewCarbsButtonIncrement2),
-                pushedWatchface = preferences.get(StringKey.WearPushedWatchface)
+                pushedWatchface = preferences.get(StringKey.WearPushedWatchface),
+                tsunamiDefaultDuration = preferences.get(IntKey.TsuDefaultDuration), // Local change
+                tsunamiButtonIncrement1 = preferences.get(DoubleKey.TsuButtonIncrement1), // Local change
+                tsunamiButtonIncrement2 = preferences.get(DoubleKey.TsuButtonIncrement2), // Local change
+                tsunamiButtonIncrement3 = preferences.get(DoubleKey.TsuButtonIncrement3) // Local change
             )
         )
+        sendTsunamiState() // Local change
         // QuickWizard
         sendQuickWizardListToWear()
         //UserAction
@@ -1810,3 +1892,6 @@ class DataHandlerMobile(
     }
 
 }
+
+/** Local change. The same limit as the phone's Tsunami dialog. */
+private const val TSUNAMI_MAX_MINUTES = 300

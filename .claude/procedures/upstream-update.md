@@ -63,3 +63,12 @@ Do this on a new branch, so `tsunami` stays usable if the merge goes badly.
 | Extra max IOB above 180 | `TsunamiHighBgMaxIob.kt`, `TsunamiLocalKeys.kt` | `DetermineBasalTsunami.kt`, `TsunamiPlugin.kt` |
 | Max IOB follows profile % | `TsunamiMaxIobScaling.kt` | `TsunamiPlugin.kt` |
 | SMB cap uses real profile % | `TsunamiSmbCapScaling.kt` | `TsunamiPlugin.kt` |
+
+## The watch changes (branch `tsunami-watch`)
+
+Tsunami and prebolus from the watch touch more shared files than the other local changes. Grep "Local change" as usual, and also check these:
+
+- `wear/watchfacepush/src/wfs/template/watchface.xml` and the two preview pictures are ours and replace the upstream face. On a conflict keep ours. If upstream adds an embedded face or changes how faces are chosen, look at it again.
+- `ComplicationData.tsunamiActiveUntil` must stay the **last** field. Protobuf numbers the fields by their order, so if upstream adds a field after it, move ours to the end again, or use `@ProtoNumber`. Otherwise the stored data on the watch cannot be read.
+- `EventData.Preferences`: our fields go last and have defaults.
+- Install the phone and the watch APK from the same build. They share the message format.

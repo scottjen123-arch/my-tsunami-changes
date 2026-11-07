@@ -156,6 +156,22 @@ sealed class EventData : Event() {
     @Serializable
     data class ActionSceneStopConfirmed(val triggerChain: Boolean = false) : EventData()
 
+    // Local change: Tsunami and prebolus from the watch
+    /**
+     * The watch asks to start a Tsunami session, with an optional prebolus. [insulin] can be 0.
+     * The phone answers with a confirmation, and the wearer's OK returns as [ActionBolusConfirmed].
+     */
+    @Serializable
+    data class ActionTsunamiPreCheck(val insulin: Double, val durationMinutes: Int) : EventData()
+
+    /** The watch asks to stop the running Tsunami session. Answered in the same way as [ActionTsunamiPreCheck]. */
+    @Serializable
+    data class ActionTsunamiStopPreCheck(val timeStamp: Long) : EventData()
+
+    /** The phone tells the watch when the running Tsunami session ends. [activeUntil] is 0 when no session runs. */
+    @Serializable
+    data class TsunamiState(val activeUntil: Long) : EventData()
+
     /**
      * What the phone knows about the active scene, for the scene tile and Loop Status.
      *
@@ -439,7 +455,12 @@ sealed class EventData : Event() {
          * a value of `StringKey.WearPushedWatchface`. Defaulted, so a payload from a phone that
          * predates the field still decodes and keeps the face that was pushed before.
          */
-        val pushedWatchface: String = "cwf"
+        val pushedWatchface: String = "cwf",
+        // Local change: Tsunami and prebolus from the watch. Same values as the phone's Tsunami dialog.
+        val tsunamiDefaultDuration: Int = 0,
+        val tsunamiButtonIncrement1: Double = 0.5,
+        val tsunamiButtonIncrement2: Double = 1.0,
+        val tsunamiButtonIncrement3: Double = 2.0
     ) : EventData()
 
     @Serializable

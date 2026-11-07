@@ -19,10 +19,9 @@ repositories {
  * an app one slot, so only one of them is installed at a time: the wearer picks which one in the
  * phone's wear settings, and the wear app swaps the slot.
  *
- * - `wfs`: the face designed in Watch Face Studio (AAPS V4.wfs), a layout of AAPS complications.
- *   To update the design: re-export from WFS, then regenerate `src/wfs/template/watchface.xml`
- *   from the exported APK's `res/raw/watchface.xml`, re-inserting the AAPS_WEAR_APP_ID
- *   DefaultProviderPolicy entries.
+ * - `wfs`: Local change. A hand-written face with BG, IOB and buttons for Tsunami and bolus, a layout of
+ *   AAPS complications. It replaces the face designed in Watch Face Studio. On a merge from upstream,
+ *   keep our `src/wfs/template/watchface.xml` and preview pictures.
  * - `cwf`: the document that shows the Custom watchface as a full-screen image complication, so
  *   the wearer's own zip design reaches a watch whose firmware no longer runs code-based faces.
  *   Hand-written, see `_docs/CWF_WFF_Prompt.md`.

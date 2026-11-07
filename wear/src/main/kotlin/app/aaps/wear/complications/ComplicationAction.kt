@@ -70,6 +70,16 @@ enum class ComplicationAction {
     RUNNING_MODE,
 
     /**
+     * Local change: opens the Tsunami screen, to start a session with an optional prebolus, or to stop it.
+     */
+    TSUNAMI,
+
+    /**
+     * Local change: opens the insulin-only bolus screen, so a session keeps running with the same end time.
+     */
+    INSULIN_ONLY,
+
+    /**
      * Opens warning dialog about watch-phone sync issues.
      * Displayed when data hasn't updated from phone recently.
      */

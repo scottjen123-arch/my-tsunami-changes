@@ -644,6 +644,72 @@
                 android:value="300" />
         </service>
 
+        <!-- Local change: data slot of the Tsunami face -->
+        <service
+            android:name=".complications.TsunamiComplication"
+            android:exported="true"
+            android:icon="@drawable/ic_loop_closed_white"
+            android:label="@string/label_tsunami_button"
+            android:permission="com.google.android.wearable.permission.BIND_COMPLICATION_PROVIDER">
+            <intent-filter>
+                <action android:name="android.support.wearable.complications.ACTION_COMPLICATION_UPDATE_REQUEST" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.support.wearable.complications.SUPPORTED_TYPES"
+                android:value="SHORT_TEXT" />
+            <meta-data
+                android:name="android.support.wearable.complications.UPDATE_PERIOD_SECONDS"
+                android:value="300" />
+            <meta-data
+                android:name="android.support.wearable.complications.SAFE_WATCH_FACES"
+                android:value="${applicationId}.watchfacepush.wfs,${applicationId}.watchfacepush.cwf" />
+        </service>
+
+        <!-- Local change: data slot of the Tsunami face -->
+        <service
+            android:name=".complications.TsunamiFaceIobComplication"
+            android:exported="true"
+            android:icon="@drawable/ic_bolus"
+            android:label="@string/label_tsunami_face_iob"
+            android:permission="com.google.android.wearable.permission.BIND_COMPLICATION_PROVIDER">
+            <intent-filter>
+                <action android:name="android.support.wearable.complications.ACTION_COMPLICATION_UPDATE_REQUEST" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.support.wearable.complications.SUPPORTED_TYPES"
+                android:value="SHORT_TEXT" />
+            <meta-data
+                android:name="android.support.wearable.complications.UPDATE_PERIOD_SECONDS"
+                android:value="300" />
+            <meta-data
+                android:name="android.support.wearable.complications.SAFE_WATCH_FACES"
+                android:value="${applicationId}.watchfacepush.wfs,${applicationId}.watchfacepush.cwf" />
+        </service>
+
+        <!-- Local change: data slot of the Tsunami face -->
+        <service
+            android:name=".complications.TsunamiBolusComplication"
+            android:exported="true"
+            android:icon="@drawable/ic_bolus"
+            android:label="@string/label_tsunami_face_bolus"
+            android:permission="com.google.android.wearable.permission.BIND_COMPLICATION_PROVIDER">
+            <intent-filter>
+                <action android:name="android.support.wearable.complications.ACTION_COMPLICATION_UPDATE_REQUEST" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.support.wearable.complications.SUPPORTED_TYPES"
+                android:value="SHORT_TEXT" />
+            <meta-data
+                android:name="android.support.wearable.complications.UPDATE_PERIOD_SECONDS"
+                android:value="300" />
+            <meta-data
+                android:name="android.support.wearable.complications.SAFE_WATCH_FACES"
+                android:value="${applicationId}.watchfacepush.wfs,${applicationId}.watchfacepush.cwf" />
+        </service>
+
         <service
             android:name=".complications.RunningModeComplication"
             android:exported="true"
@@ -945,6 +1011,13 @@
             android:name=".interaction.actions.TreatmentActivity"
             android:exported="true"
             android:label="@string/menu_treatment"
+            android:taskAffinity=""
+            android:theme="@style/WearAppCompatDark" />
+        <!-- Local change: only this app opens it -->
+        <activity
+            android:name=".interaction.actions.TsunamiActivity"
+            android:exported="false"
+            android:label="@string/label_tsunami_button"
             android:taskAffinity=""
             android:theme="@style/WearAppCompatDark" />
         <activity

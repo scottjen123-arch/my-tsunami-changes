@@ -132,6 +132,15 @@ class ComplicationDataRepository(
     /**
      * Update Treatment data from phone
      */
+    /** Local change. Does not touch lastUpdateTimestamp: this small message must not hide that BG and IOB are old. */
+    suspend fun updateTsunamiState(state: EventData.TsunamiState) {
+        try {
+            dataStore.updateData { current -> current.copy(tsunamiActiveUntil = state.activeUntil) }
+        } catch (e: Exception) {
+            aapsLogger.error(LTag.WEAR, "Failed to update Tsunami state", e)
+        }
+    }
+
     suspend fun updateTreatmentData(treatmentData: EventData.TreatmentData) {
         try {
             dataStore.updateData { current ->
