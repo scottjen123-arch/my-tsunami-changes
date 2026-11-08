@@ -171,6 +171,38 @@ internal fun SmbToggleEditor(
             onCheckedChange = { onUpdate(action.copy(enabled = it)) }
         )
     }
+    // Local change: size of each SMB while the scene is active. Only makes sense with SMB on.
+    if (action.enabled) {
+        NumberInputRow(
+            labelRef = CoreUiStrings.scene_editor_smb_size,
+            value = action.smbPercent.toDouble(),
+            onValueChange = { onUpdate(action.copy(smbPercent = it.toInt())) },
+            valueRange = SceneAction.SmbToggle.SMB_PERCENT_MIN.toDouble()..SceneAction.SmbToggle.SMB_PERCENT_MAX.toDouble(),
+            step = SceneAction.SmbToggle.SMB_PERCENT_STEP.toDouble(),
+            unitLabel = CoreUiStrings.units_percent
+        )
+    }
+}
+
+// Local change: max IOB of a scene, in percent of the max IOB setting
+@Composable
+internal fun MaxIobEditor(
+    action: SceneAction.MaxIob,
+    onUpdate: (SceneAction) -> Unit
+) {
+    Text(
+        text = stringResource(CoreUiStrings.scene_editor_max_iob_info),
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
+    NumberInputRow(
+        labelRef = CoreUiStrings.scene_editor_max_iob,
+        value = action.percent.toDouble(),
+        onValueChange = { onUpdate(action.copy(percent = it.toInt())) },
+        valueRange = SceneAction.MaxIob.PERCENT_MIN.toDouble()..SceneAction.MaxIob.PERCENT_MAX.toDouble(),
+        step = SceneAction.MaxIob.PERCENT_STEP.toDouble(),
+        unitLabel = CoreUiStrings.units_percent
+    )
 }
 
 @Composable

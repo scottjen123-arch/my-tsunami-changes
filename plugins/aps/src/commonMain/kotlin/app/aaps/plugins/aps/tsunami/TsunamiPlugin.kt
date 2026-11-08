@@ -43,6 +43,7 @@ import app.aaps.core.interfaces.profiling.Profiler
 import app.aaps.core.interfaces.resources.TextResolver
 import app.aaps.core.interfaces.rx.bus.RxBus
 import app.aaps.core.interfaces.rx.events.EventAPSCalculationFinished
+import app.aaps.core.interfaces.scenes.ActiveSceneSync
 import app.aaps.core.interfaces.stats.TddCalculator
 import app.aaps.core.interfaces.utils.DateUtil
 import app.aaps.core.interfaces.utils.HardLimits
@@ -110,7 +111,9 @@ open class TsunamiPlugin(
     private val glucoseStatusCalculatorTsunami: GlucoseStatusCalculatorTsunami,
     private val apsResultProvider: () -> APSResult,
     private val ch: ConcentrationHelper,
-    private val fabricPrivacy: FabricPrivacy
+    private val fabricPrivacy: FabricPrivacy,
+    // Local change: the running scene can set the SMB size and lower max IOB, see TsunamiSceneSmb and TsunamiSceneMaxIob
+    private val activeSceneSync: ActiveSceneSync
 ) : PluginBaseWithPreferences(
     PluginDescription()
         .mainType(PluginType.APS)
@@ -634,6 +637,8 @@ open class TsunamiPlugin(
             dynIsfMode = effectiveDynIsfMode,
             recentGlucoseHistory = recentGlucoseHistory,
             rawGlucoseHistory = rawGlucoseHistory,
+            sceneSmbPercent = TsunamiSceneSmb.smbPercent(activeSceneSync.getActiveState(), now),
+            sceneLimitsMaxIob = TsunamiSceneMaxIob.percent(activeSceneSync.getActiveState(), now) != null, // Local change
         ).also {
             val determineBasalResult = apsResultProvider().with(it)
             // Preserve input data
@@ -665,6 +670,7 @@ open class TsunamiPlugin(
             val maxIobPref = preferences.get(DoubleKey.ApsSmbMaxIob)
             if (!TsunamiMaxIobScaling.applyScaled(maxIob, maxIobPref, preferences, profileFunction, persistenceLayer, dateUtil, rh, this)) // Local change: max IOB follows the profile percentage
                 maxIob.setIfSmaller(maxIobPref, rh.gs(ApsStrings.limiting_iob, maxIobPref, rh.gs(ApsStrings.maxvalueinpreferences)), this)
+            TsunamiSceneMaxIob.apply(maxIob, maxIobPref, activeSceneSync.getActiveState(), dateUtil.now(), rh, this) // Local change: the running scene can lower max IOB
             maxIob.setIfSmaller(hardLimits.maxIobSMB(), rh.gs(ApsStrings.limiting_iob, hardLimits.maxIobSMB(), rh.gs(ApsStrings.hardlimit)), this)
         }
         return maxIob

@@ -12,6 +12,7 @@ import app.aaps.shared.tests.TestBaseWithProfile
 import com.google.common.truth.Truth.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import kotlin.math.floor
 
 /**
  * Wave close to target: no dosing below target, temp basal only inside the SMB zone (target + SMB cap * ISF,
@@ -112,7 +113,7 @@ class DetermineBasalTsunamiTest : TestBaseWithProfile() {
         lastBolus = 0.0
     )
 
-    private fun run(bg: Double, delta: Double, target: Double = 100.0, sens: Double = 40.0, tempTarget: Boolean = false): RT {
+    private fun run(bg: Double, delta: Double, target: Double = 100.0, sens: Double = 40.0, tempTarget: Boolean = false, sceneSmbPercent: Int = 100): RT {
         val history = history(bg, delta)
         return sut.determine_basal(
             glucose_status = history[0],
@@ -126,7 +127,8 @@ class DetermineBasalTsunamiTest : TestBaseWithProfile() {
             flatBGsDetected = false,
             dynIsfMode = false,
             recentGlucoseHistory = history,
-            rawGlucoseHistory = history
+            rawGlucoseHistory = history,
+            sceneSmbPercent = sceneSmbPercent
         )
     }
 
@@ -193,5 +195,32 @@ class DetermineBasalTsunamiTest : TestBaseWithProfile() {
         assertThat(TsunamiSafety.waveSmbZoneTop(targetBg = 100.0, smbCap = 0.3, sens = 40.0)).isWithin(1e-9).of(112.0)
         assertThat(TsunamiSafety.waveSmbZoneTop(targetBg = 100.0, smbCap = 0.8, sens = 100.0)).isWithin(1e-9).of(160.0)
         assertThat(TsunamiSafety.waveSmbZoneTop(targetBg = 140.0, smbCap = 0.8, sens = 40.0)).isWithin(1e-9).of(172.0)
+    }
+
+    // Local change: SMB size set by a running scene
+
+    @Test
+    fun `scene SMB size halves the SMB and the temp basal does not make up the rest`() {
+        val full = run(bg = 180.0, delta = 5.0)
+        val half = run(bg = 180.0, delta = 5.0, sceneSmbPercent = 50)
+
+        // Needs an SMB of at least 2 steps to show the halving
+        assertThat(full.smb()).isAtLeast(0.2)
+        // Half of the full SMB, rounded down to the 0.1 U step of this profile
+        assertThat(half.smb()).isWithin(1e-9).of(floor(full.smb() * 0.5 * 10 + 1e-9) / 10)
+        // The temp basal is the one the full SMB would have left, not a bigger one
+        assertThat(half.rate).isEqualTo(full.rate)
+        assertThat(half.duration).isEqualTo(full.duration)
+        assertThat(half.reason.toString()).contains("scene SMB size 50%")
+    }
+
+    @Test
+    fun `full scene SMB size changes nothing`() {
+        val normal = run(bg = 180.0, delta = 5.0)
+        val full = run(bg = 180.0, delta = 5.0, sceneSmbPercent = 100)
+
+        assertThat(full.smb()).isEqualTo(normal.smb())
+        assertThat(full.rate).isEqualTo(normal.rate)
+        assertThat(full.reason.toString()).doesNotContain("scene SMB size")
     }
 }

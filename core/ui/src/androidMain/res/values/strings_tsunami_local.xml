@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Local change: SMB size in the SMB action of a scene -->
+    <string name="scene_editor_smb_size">SMB size (Tsunami only)</string>
+    <string name="scene_action_smb_on_size" comment="%1$d=SMB size in percent of the calculated SMB. Example: Enable SMB, size 50%">Enable SMB, size %1$d%%</string>
+    <!-- Local change: max IOB action of a scene -->
+    <string name="scene_action_max_iob" comment="%1$d=max IOB in percent of the max IOB setting. Example: Max IOB 60%">Max IOB %1$d%%</string>
+    <string name="scene_editor_max_iob">Max IOB (Tsunami only)</string>
+    <string name="scene_editor_max_iob_info">Percent of your max IOB setting. It can only lower max IOB. At 0% the loop gives no more insulin than your normal basal.</string>
+</resources>

@@ -11,6 +11,7 @@ internal fun SmbStepPreview() {
         SmbStep(
             state = previewState,
             onToggle = {}, onUpdate = {},
+            onMaxIobToggle = {}, onMaxIobUpdate = {},
             onBack = {}, onNext = {}
         )
     }

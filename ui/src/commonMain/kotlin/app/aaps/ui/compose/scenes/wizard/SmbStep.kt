@@ -17,6 +17,7 @@ import app.aaps.core.ui.compose.pump.WizardButton
 import app.aaps.core.ui.compose.pump.WizardStepLayout
 import app.aaps.core.ui.compose.stringResource
 import app.aaps.ui.UiStrings
+import app.aaps.ui.compose.scenes.MaxIobEditor
 import app.aaps.ui.compose.scenes.SmbToggleEditor
 
 /**
@@ -27,6 +28,8 @@ internal fun SmbStep(
     state: SceneWizardViewModel.WizardState,
     onToggle: (Boolean) -> Unit,
     onUpdate: (SceneAction) -> Unit,
+    onMaxIobToggle: (Boolean) -> Unit, // Local change
+    onMaxIobUpdate: (SceneAction) -> Unit, // Local change
     onBack: () -> Unit,
     onNext: () -> Unit
 ) {
@@ -57,6 +60,24 @@ internal fun SmbStep(
                 SmbToggleEditor(
                     action = state.smbAction,
                     onUpdate = onUpdate
+                )
+            }
+        }
+        // Local change: max IOB of the scene. On this step because it limits the same insulin.
+        ActionToggle(
+            label = stringResource(CoreUiStrings.scene_wizard_include_action, stringResource(CoreUiStrings.scene_editor_max_iob)),
+            checked = state.maxIobEnabled,
+            onCheckedChange = onMaxIobToggle
+        )
+        AnimatedVisibility(
+            visible = state.maxIobEnabled,
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically()
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(AapsSpacing.medium)) {
+                MaxIobEditor(
+                    action = state.maxIobAction,
+                    onUpdate = onMaxIobUpdate
                 )
             }
         }

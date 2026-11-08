@@ -63,6 +63,8 @@ Do this on a new branch, so `tsunami` stays usable if the merge goes badly.
 | Extra max IOB above 180 | `TsunamiHighBgMaxIob.kt`, `TsunamiLocalKeys.kt` | `DetermineBasalTsunami.kt`, `TsunamiPlugin.kt` |
 | Max IOB follows profile % | `TsunamiMaxIobScaling.kt` | `TsunamiPlugin.kt` |
 | SMB cap uses real profile % | `TsunamiSmbCapScaling.kt` | `TsunamiPlugin.kt` |
+| Scene SMB size | `TsunamiSceneSmb.kt`, `core/ui/.../strings_tsunami_local.xml` | `DetermineBasalTsunami.kt`, `TsunamiPlugin.kt`, `SceneAction.kt`, `SceneSerializer.kt`, `ActionEditors.kt`, `SceneExecutor.kt` |
+| Scene max IOB | `TsunamiSceneMaxIob.kt`, both `strings_tsunami_local.xml` | `DetermineBasalTsunami.kt`, `TsunamiPlugin.kt`, `SceneAction.kt`, `SceneSerializer.kt`, `ActionEditors.kt`, `SceneExecutor.kt`, `SceneListViewModel.kt`, `SceneWizardViewModel.kt`, `SceneWizardScreen.kt`, `SmbStep.kt` |
 
 ## The watch changes (branch `tsunami-watch`)
 
@@ -72,3 +74,23 @@ Tsunami and prebolus from the watch touch more shared files than the other local
 - `ComplicationData.tsunamiActiveUntil` must stay the **last** field. Protobuf numbers the fields by their order, so if upstream adds a field after it, move ours to the end again, or use `@ProtoNumber`. Otherwise the stored data on the watch cannot be read.
 - `EventData.Preferences`: our fields go last and have defaults.
 - Install the phone and the watch APK from the same build. They share the message format.
+
+## The scene SMB size (branch `tsunami-scene-smb`)
+
+The SMB action of a scene has an extra `smbPercent`. It changes upstream scene files, so expect conflicts there:
+
+- `SceneAction.SmbToggle` keeps `smbPercent` with the default 100. If upstream changes the SMB action, keep the field and its default.
+- `SceneSerializer`: we write `smbPercent` and read it with a default of 100, clamped to 10-100. Builds without it ignore the field, so scenes stay readable both ways.
+- `DetermineBasalTsunami`: the SMB is scaled, but the insulin requirement is lowered by the **full** SMB, so the temp basal does not make up the difference. If upstream rewrites the SMB block, keep both parts.
+
+## The scene max IOB (branch `tsunami-scene-smb`)
+
+A scene can have a `SceneAction.MaxIob` with a percentage of the max IOB setting (0-100). It has no effect when the
+scene starts. Tsunami reads it in every loop run:
+
+- `TsunamiPlugin.applyMaxIOBConstraints` calls `TsunamiSceneMaxIob.apply` after the value from preferences and before
+  the hard limit. It uses `setIfSmaller`, so it can only lower max IOB. If upstream rewrites this function, keep the call.
+- `DetermineBasalTsunami` gets `sceneLimitsMaxIob` and skips the extra max IOB above 180 while it is true. A failure in
+  `TsunamiHighBgMaxIobWiringTest` (the scene test) means this line was lost.
+- The wizard shows it on the SMB step. If upstream changes the wizard steps, keep the second toggle there.
+- Builds without it skip the unknown `max_iob` type, so scenes stay readable both ways.

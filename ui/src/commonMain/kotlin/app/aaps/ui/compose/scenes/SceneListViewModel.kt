@@ -372,6 +372,9 @@ class SceneListViewModel(
                     summaries.add(rh.gs(CoreUiStrings.scene_revert_loop_mode))
                 }
 
+                // Local change: max IOB is back to normal as soon as the scene ends, nothing to show
+                is SceneAction.MaxIob          -> Unit
+
                 is SceneAction.CarePortalEvent -> {
                     hasCarePortal = true
                 }

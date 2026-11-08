@@ -178,7 +178,15 @@ class SceneExecutor(
             rh.gs(CoreUiStrings.scene_action_profile, action.profileName, action.percentage)
         else
             rh.gs(CoreUiStrings.scene_action_profile_pct_only, action.percentage)
-        is SceneAction.SmbToggle       -> if (action.enabled) rh.gs(CoreUiStrings.scene_action_smb_on) else rh.gs(CoreUiStrings.scene_action_smb_off)
+        is SceneAction.SmbToggle       -> when {
+            !action.enabled                                            -> rh.gs(CoreUiStrings.scene_action_smb_off)
+            // Local change: show the SMB size when it is not full size
+            action.smbPercent < SceneAction.SmbToggle.SMB_PERCENT_MAX -> rh.gs(CoreUiStrings.scene_action_smb_on_size, action.smbPercent)
+            else                                                       -> rh.gs(CoreUiStrings.scene_action_smb_on)
+        }
+
+        is SceneAction.MaxIob          -> rh.gs(CoreUiStrings.scene_action_max_iob, action.percent) // Local change
+
         is SceneAction.LoopModeChange  -> rh.gs(CoreUiStrings.scene_action_running_mode, translator.translate(action.mode))
         is SceneAction.CarePortalEvent -> rh.gs(CoreUiStrings.scene_action_careportal, translator.translate(action.type))
     }
@@ -475,6 +483,9 @@ class SceneExecutor(
                     SceneExecutionResult.ActionResult(action, success = true)
                 }
 
+                // Local change: nothing to write. Tsunami reads the running scene every loop run.
+                is SceneAction.MaxIob          -> SceneExecutionResult.ActionResult(action, success = true)
+
                 is SceneAction.LoopModeChange  -> {
                     val result = persistenceLayer.insertOrUpdateRunningMode(
                         runningMode = RM(
@@ -581,6 +592,9 @@ class SceneExecutor(
                     state.priorSmb?.let { preferences.put(BooleanKey.ApsUseSmb, it) }
                     SceneExecutionResult.ActionResult(action, success = true)
                 }
+
+                // Local change: ends with the scene, nothing to revert
+                is SceneAction.MaxIob          -> SceneExecutionResult.ActionResult(action, success = true)
 
                 is SceneAction.LoopModeChange  -> {
                     // Check if scene's running mode is still active (not manually overridden)

@@ -1,6 +1,7 @@
 package app.aaps.ui.compose.scenes.wizard
 
 import androidx.lifecycle.SavedStateHandle
+import app.aaps.core.data.model.Scene
 import app.aaps.core.data.model.SceneAction
 import app.aaps.core.interfaces.profile.ProfileRepository
 import app.aaps.core.interfaces.profile.ProfileUtil
@@ -23,6 +24,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mock
 import org.mockito.MockitoAnnotations
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -155,5 +159,38 @@ internal class SceneWizardViewModelTest {
         assertThat(state.icon).isEqualTo("star")
         assertThat(state.profileEnabled).isFalse()
         assertThat(state.ttEnabled).isFalse()
+    }
+
+    // Local change: max IOB action of a scene
+
+    @Test
+    fun `max IOB is saved only when it is switched on`() {
+        sut.setName("Recovery")
+        sut.updateMaxIobAction(SceneAction.MaxIob(percent = 60))
+        sut.updateMaxIobAction(SceneAction.SmbToggle(enabled = true)) // wrong type is ignored
+
+        sut.setMaxIobEnabled(true)
+        assertThat(sut.save()).isTrue()
+        sut.setMaxIobEnabled(false)
+        assertThat(sut.save()).isTrue()
+
+        val saved = argumentCaptor<Scene>()
+        verify(sceneRepository, times(2)).saveScene(saved.capture())
+        assertThat(saved.firstValue.actions).containsExactly(SceneAction.MaxIob(percent = 60))
+        assertThat(saved.secondValue.actions).isEmpty()
+    }
+
+    @Test
+    fun `editing a scene loads its max IOB`() {
+        val scene = Scene(id = "r", name = "Recovery", actions = listOf(SceneAction.MaxIob(percent = 40)))
+        whenever(sceneRepository.getScene("r")).thenReturn(scene)
+
+        val edit = SceneWizardViewModel(
+            SavedStateHandle(mapOf("sceneId" to "r")), sceneRepository, profileRepository, profileUtil,
+            preferences, translator, dateUtil, generatedTextResolver()
+        )
+
+        assertThat(edit.state.value.maxIobEnabled).isTrue()
+        assertThat(edit.state.value.maxIobAction.percent).isEqualTo(40)
     }
 }

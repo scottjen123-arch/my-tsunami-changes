@@ -214,7 +214,11 @@ class DetermineBasalTsunami(
 
     fun determine_basal(
         glucose_status: GlucoseStatus, currenttemp: CurrentTemp, iob_data_array: Array<IobTotal>, profile: OapsProfileTsunami, autosens_data: AutosensResult, meal_data: MealData,
-        microBolusAllowed: Boolean, currentTime: Long, flatBGsDetected: Boolean, dynIsfMode: Boolean, recentGlucoseHistory: List<GlucoseStatus>, rawGlucoseHistory: List<GlucoseStatus>
+        microBolusAllowed: Boolean, currentTime: Long, flatBGsDetected: Boolean, dynIsfMode: Boolean, recentGlucoseHistory: List<GlucoseStatus>, rawGlucoseHistory: List<GlucoseStatus>,
+        // Local change: SMB size in percent set by the running scene, see TsunamiSceneSmb
+        sceneSmbPercent: Int = TsunamiSceneSmb.FULL,
+        // Local change: the running scene limits max IOB (already in profile.max_iob), see TsunamiSceneMaxIob
+        sceneLimitsMaxIob: Boolean = false
     ): RT {
         consoleError = mutableListOf()
         consoleLog = mutableListOf()
@@ -494,7 +498,10 @@ class DetermineBasalTsunami(
         )
         val safetyAllowance = tsunamiSafety.allowance
         if (tsunamiModeID > 0) consoleError.addAll(tsunamiSafety.log)
-        max_iob = highBgMaxIob.maxIob(max_iob, bg, glucose_status.delta, tsunamiModeID, consoleError) // Local change: after TsunamiSafety on purpose, so the dose size keeps using the normal max IOB
+        // Local change: after TsunamiSafety on purpose, so the dose size keeps using the normal max IOB.
+        // No extra while a scene limits max IOB, so the scene value stays a ceiling.
+        if (sceneLimitsMaxIob) consoleError.add("Scene max IOB: $max_iob, no extra max IOB above 180")
+        else max_iob = highBgMaxIob.maxIob(max_iob, bg, glucose_status.delta, tsunamiModeID, consoleError)
 
         // MP Early-stage decision between oref1 and tsunami loop algorithm (skip calculations if basic conditions aren't met)
         var activityController = false
@@ -1503,14 +1510,17 @@ class DetermineBasalTsunami(
                 // bolus 1/2 the insulinReq (oref1), up to maxBolus, rounding down to nearest bolus increment
                 val roundSMBTo = 1 / profile.bolus_increment
                 // MP Adjust SMB size by insulinReqPCT; Default value in oref1 is 0.5, Tsunami/Wave uses user-set values
-                val microBolus = floor(min(insulinReq * insulinReqPCT, maxBolus) * roundSMBTo) / roundSMBTo
+                val fullMicroBolus = floor(min(insulinReq * insulinReqPCT, maxBolus) * roundSMBTo) / roundSMBTo
+                // Local change: a running scene can make each SMB smaller. Only the SMB changes. The
+                // temp basal logic below keeps using the full SMB, so it does not make up the difference.
+                val microBolus = TsunamiSceneSmb.scaledSmb(fullMicroBolus, sceneSmbPercent, profile.bolus_increment)
                 // calculate a long enough zero temp to eventually correct back up to target
                 val smbTarget = target_bg
                 val worstCaseInsulinReq = (smbTarget - (naive_eventualBG + minIOBPredBG) / 2.0) / sens
                 var durationReq = round(60 * worstCaseInsulinReq / profile.current_basal)
 
                 // if insulinReq > 0 but not enough for a microBolus, don't set an SMB zero temp
-                if (insulinReq > 0 && microBolus < profile.bolus_increment) {
+                if (insulinReq > 0 && fullMicroBolus < profile.bolus_increment) {
                     durationReq = 0
                 }
 
@@ -1566,8 +1576,11 @@ class DetermineBasalTsunami(
                 }
 
                 rT.reason.append(" insulinReq $insulinReq")
-                if (microBolus >= maxBolus) {
+                if (fullMicroBolus >= maxBolus) {
                     rT.reason.append("; maxBolus $maxBolus")
+                }
+                if (sceneSmbPercent < TsunamiSceneSmb.FULL) {
+                    rT.reason.append("; scene SMB size $sceneSmbPercent%: ${fullMicroBolus}U -> ${microBolus}U")
                 }
                 if (durationReq > 0) {
                     rT.reason.append("; setting ${durationReq}m low temp of ${smbLowTempReq}U/h")
@@ -1585,8 +1598,11 @@ class DetermineBasalTsunami(
                     if (microBolus > 0) {
                         rT.units = microBolus
                         rT.reason.append("Microbolusing ${microBolus}U. ")
-                        insulinReq -= microBolus //MP Altered oref1 code: If SMB is issued, any TBR to follow needs to be lowered by the SMB.
                     }
+                    //MP Altered oref1 code: If SMB is issued, any TBR to follow needs to be lowered by the SMB.
+                    // Local change: lowered by the full SMB, also when a scene made it smaller or zero, so the
+                    // temp basal does not give the part the scene held back.
+                    if (fullMicroBolus > 0) insulinReq -= fullMicroBolus
                 } else {
                     val nextBolusMins = (SMBInterval-lastBolusAge) / 60.0
                     val nextBolusSeconds = (SMBInterval - lastBolusAge) % 60

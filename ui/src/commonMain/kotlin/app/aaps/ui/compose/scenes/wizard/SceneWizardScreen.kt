@@ -106,6 +106,7 @@ fun SceneWizardScreen(
                     SceneWizardViewModel.STEP_SMB -> SmbStep(
                         state = state, onToggle = viewModel::setSmbEnabled,
                         onUpdate = viewModel::updateSmbAction,
+                        onMaxIobToggle = viewModel::setMaxIobEnabled, onMaxIobUpdate = viewModel::updateMaxIobAction, // Local change
                         onBack = onBack, onNext = onNext
                     )
 

@@ -120,7 +120,7 @@ class TsunamiHighBgMaxIobWiringTest : TestBaseWithProfile() {
         lastBolus = 0.0
     )
 
-    private fun run(bg: Double = 220.0, delta: Double = 8.0, iob: Double = 7.5, tsunamiModeId: Int = 2): RT {
+    private fun run(bg: Double = 220.0, delta: Double = 8.0, iob: Double = 7.5, tsunamiModeId: Int = 2, sceneLimitsMaxIob: Boolean = false): RT {
         val history = history(bg, delta)
         return sut.determine_basal(
             glucose_status = history[0],
@@ -134,7 +134,8 @@ class TsunamiHighBgMaxIobWiringTest : TestBaseWithProfile() {
             flatBGsDetected = false,
             dynIsfMode = false,
             recentGlucoseHistory = history,
-            rawGlucoseHistory = history
+            rawGlucoseHistory = history,
+            sceneLimitsMaxIob = sceneLimitsMaxIob
         )
     }
 
@@ -199,5 +200,18 @@ class TsunamiHighBgMaxIobWiringTest : TestBaseWithProfile() {
         val rT = run(delta = -3.0)
 
         assertThat(rT.console()).doesNotContain("High BG extra max IOB")
+    }
+
+    // Local change: a scene that lowers max IOB turns the extra off, see TsunamiSceneMaxIob
+
+    @Test
+    fun `switch on - scene limits max IOB - no extra room`() {
+        switchOn()
+
+        val rT = run(sceneLimitsMaxIob = true)
+
+        assertThat(rT.stoppedByMaxIob()).isTrue()
+        assertThat(rT.console()).doesNotContain("High BG extra max IOB")
+        assertThat(rT.console()).contains("Scene max IOB: 7.0, no extra max IOB above 180")
     }
 }

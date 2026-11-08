@@ -10,6 +10,7 @@ import app.aaps.core.utils.lenientBoolean
 import app.aaps.core.utils.lenientBooleanOrNull
 import app.aaps.core.utils.lenientDoubleOrNull
 import app.aaps.core.utils.lenientInt
+import app.aaps.core.utils.lenientIntOrNull
 import app.aaps.core.utils.lenientString
 import app.aaps.core.utils.lenientStringOrNull
 import kotlinx.serialization.json.Json
@@ -117,6 +118,14 @@ private fun List<SceneAction>.toJsonArray(): JsonArray =
                         is SceneAction.SmbToggle       -> {
                             put("type", "smb_toggle")
                             put("enabled", action.enabled)
+                            // Local change. Builds without it ignore the extra field.
+                            put("smbPercent", action.smbPercent)
+                        }
+
+                        // Local change. Builds without it skip the unknown type.
+                        is SceneAction.MaxIob          -> {
+                            put("type", "max_iob")
+                            put("percent", action.percent)
                         }
 
                         is SceneAction.LoopModeChange  -> {
@@ -154,7 +163,18 @@ private fun JsonArray.toSceneActions(): List<SceneAction> {
             "smb_toggle"     -> SceneAction.SmbToggle(
                 // getBoolean threw for a missing or non-boolean value, and the throw was fatal to the
                 // whole list. Keeping it fatal to this action only, via the same error() route.
-                enabled = obj.lenientBooleanOrNull("enabled") ?: error("smb toggle without enabled")
+                enabled = obj.lenientBooleanOrNull("enabled") ?: error("smb toggle without enabled"),
+                // Local change. Missing (scenes saved before it existed) means full size. A value
+                // out of range is clamped, so a damaged entry can never make SMBs bigger.
+                smbPercent = obj.lenientInt("smbPercent", SceneAction.SmbToggle.SMB_PERCENT_MAX)
+                    .coerceIn(SceneAction.SmbToggle.SMB_PERCENT_MIN, SceneAction.SmbToggle.SMB_PERCENT_MAX)
+            )
+
+            // Local change. A missing percent is an error, the same as a temp target without a
+            // target. A value out of range is clamped, so it can never raise max IOB.
+            "max_iob"        -> SceneAction.MaxIob(
+                percent = (obj.lenientIntOrNull("percent") ?: error("max IOB without percent"))
+                    .coerceIn(SceneAction.MaxIob.PERCENT_MIN, SceneAction.MaxIob.PERCENT_MAX)
             )
 
             "loop_mode"      -> SceneAction.LoopModeChange(

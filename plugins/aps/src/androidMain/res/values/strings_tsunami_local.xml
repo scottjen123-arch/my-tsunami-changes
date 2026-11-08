@@ -6,4 +6,5 @@
     <string name="tsunami_high_bg_extra_max_iob_summary">During a Tsunami session, allow more max IOB while BG is above 180 mg/dL and still rising. More insulin can cause a low later. Off by default.</string>
     <string name="tsunami_high_bg_extra_max_iob_amount_title">Extra max IOB amount</string>
     <string name="tsunami_high_bg_extra_max_iob_amount_summary">Added to max IOB while the rule above applies. The hard limit still wins.</string>
+    <string name="max_iob_scene_tsunami" comment="Ends the sentence 'Limiting IOB to %1$.1f U because of …'. %1$d=max IOB percent set in the running scene. Example: scene max IOB 60%">scene max IOB %1$d%%</string>
 </resources>

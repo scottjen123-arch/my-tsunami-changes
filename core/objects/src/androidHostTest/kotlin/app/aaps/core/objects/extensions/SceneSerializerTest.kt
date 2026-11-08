@@ -208,4 +208,97 @@ class SceneSerializerTest : TestBase() {
             assertThat(lm.mode).isEqualTo(mode)
         }
     }
+
+    // Local change: SMB size in the SMB action
+
+    private fun smbToggleFrom(action: JSONObject): SceneAction.SmbToggle =
+        JSONArray().apply {
+            put(JSONObject().apply {
+                put("id", "s")
+                put("name", "Recovery")
+                put("actions", JSONArray().apply { put(action) })
+            })
+        }.toString().toScenes()[0].actions[0] as SceneAction.SmbToggle
+
+    @Test
+    fun smbPercent_roundTrip() {
+        val scene = Scene(id = "r", name = "Recovery", actions = listOf(SceneAction.SmbToggle(enabled = true, smbPercent = 50)))
+
+        val smb = listOf(scene).toJson().toScenes()[0].actions[0] as SceneAction.SmbToggle
+
+        assertThat(smb.enabled).isTrue()
+        assertThat(smb.smbPercent).isEqualTo(50)
+    }
+
+    @Test
+    fun smbPercent_missing_meansFullSize() {
+        // Scenes saved before the SMB size existed
+        val smb = smbToggleFrom(JSONObject().apply {
+            put("type", "smb_toggle")
+            put("enabled", true)
+        })
+
+        assertThat(smb.smbPercent).isEqualTo(100)
+    }
+
+    @Test
+    fun smbPercent_outOfRange_isClamped() {
+        val tooBig = smbToggleFrom(JSONObject().apply {
+            put("type", "smb_toggle")
+            put("enabled", true)
+            put("smbPercent", 300)
+        })
+        val tooSmall = smbToggleFrom(JSONObject().apply {
+            put("type", "smb_toggle")
+            put("enabled", true)
+            put("smbPercent", -20)
+        })
+
+        // Never bigger than full size
+        assertThat(tooBig.smbPercent).isEqualTo(100)
+        assertThat(tooSmall.smbPercent).isEqualTo(10)
+    }
+
+    // Local change: max IOB action
+
+    private fun maxIobFrom(action: JSONObject): List<SceneAction> =
+        JSONArray().apply {
+            put(JSONObject().apply {
+                put("id", "s")
+                put("name", "Recovery")
+                put("actions", JSONArray().apply { put(action) })
+            })
+        }.toString().toScenes().flatMap { it.actions }
+
+    @Test
+    fun maxIob_roundTrip() {
+        val scene = Scene(id = "r", name = "Recovery", actions = listOf(SceneAction.MaxIob(percent = 60)))
+
+        val maxIob = listOf(scene).toJson().toScenes()[0].actions[0] as SceneAction.MaxIob
+
+        assertThat(maxIob.percent).isEqualTo(60)
+    }
+
+    @Test
+    fun maxIob_outOfRange_isClamped() {
+        val tooBig = maxIobFrom(JSONObject().apply {
+            put("type", "max_iob")
+            put("percent", 300)
+        })
+        val tooSmall = maxIobFrom(JSONObject().apply {
+            put("type", "max_iob")
+            put("percent", -20)
+        })
+
+        // Never above the max IOB setting
+        assertThat((tooBig[0] as SceneAction.MaxIob).percent).isEqualTo(100)
+        assertThat((tooSmall[0] as SceneAction.MaxIob).percent).isEqualTo(0)
+    }
+
+    @Test
+    fun maxIob_withoutPercent_isNotRead() {
+        val actions = maxIobFrom(JSONObject().apply { put("type", "max_iob") })
+
+        assertThat(actions.filterIsInstance<SceneAction.MaxIob>()).isEmpty()
+    }
 }

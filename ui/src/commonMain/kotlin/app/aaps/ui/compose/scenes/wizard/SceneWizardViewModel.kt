@@ -78,12 +78,14 @@ class SceneWizardViewModel(
         val profileEnabled: Boolean = false,
         val ttEnabled: Boolean = false,
         val smbEnabled: Boolean = false,
+        val maxIobEnabled: Boolean = false, // Local change
         val runningModeEnabled: Boolean = false,
         val carePortalEnabled: Boolean = false,
         // Action configs
         val profileAction: SceneAction.ProfileSwitch = SceneAction.ProfileSwitch(profileName = "", percentage = 100),
         val ttAction: SceneAction.TempTarget? = null,
         val smbAction: SceneAction.SmbToggle = SceneAction.SmbToggle(enabled = false),
+        val maxIobAction: SceneAction.MaxIob = SceneAction.MaxIob(percent = SceneAction.MaxIob.PERCENT_DEFAULT), // Local change
         val runningModeAction: SceneAction.LoopModeChange = SceneAction.LoopModeChange(mode = RM.Mode.CLOSED_LOOP_LGS),
         val carePortalAction: SceneAction.CarePortalEvent = SceneAction.CarePortalEvent(type = TE.Type.EXERCISE),
         // Metadata
@@ -110,6 +112,7 @@ class SceneWizardViewModel(
         val profileAction = scene.actions.filterIsInstance<SceneAction.ProfileSwitch>().firstOrNull()
         val ttAction = scene.actions.filterIsInstance<SceneAction.TempTarget>().firstOrNull()
         val smbAction = scene.actions.filterIsInstance<SceneAction.SmbToggle>().firstOrNull()
+        val maxIobAction = scene.actions.filterIsInstance<SceneAction.MaxIob>().firstOrNull() // Local change
         val loopModeAction = scene.actions.filterIsInstance<SceneAction.LoopModeChange>().firstOrNull()
         val carePortalAction = scene.actions.filterIsInstance<SceneAction.CarePortalEvent>().firstOrNull()
 
@@ -118,11 +121,13 @@ class SceneWizardViewModel(
             profileEnabled = profileAction != null,
             ttEnabled = ttAction != null,
             smbEnabled = smbAction != null,
+            maxIobEnabled = maxIobAction != null, // Local change
             runningModeEnabled = loopModeAction != null,
             carePortalEnabled = carePortalAction != null,
             profileAction = profileAction ?: SceneAction.ProfileSwitch(profileName = "", percentage = 100),
             ttAction = ttAction,
             smbAction = smbAction ?: SceneAction.SmbToggle(enabled = false),
+            maxIobAction = maxIobAction ?: SceneAction.MaxIob(percent = SceneAction.MaxIob.PERCENT_DEFAULT), // Local change
             runningModeAction = loopModeAction ?: SceneAction.LoopModeChange(mode = RM.Mode.CLOSED_LOOP_LGS),
             carePortalAction = carePortalAction ?: SceneAction.CarePortalEvent(type = TE.Type.EXERCISE),
             durationMinutes = scene.defaultDurationMinutes,
@@ -224,6 +229,11 @@ class SceneWizardViewModel(
         _state.update { it.copy(smbEnabled = enabled) }
     }
 
+    // Local change
+    fun setMaxIobEnabled(enabled: Boolean) {
+        _state.update { it.copy(maxIobEnabled = enabled) }
+    }
+
     fun setLoopModeEnabled(enabled: Boolean) {
         _state.update { it.copy(runningModeEnabled = enabled) }
     }
@@ -242,6 +252,11 @@ class SceneWizardViewModel(
 
     fun updateSmbAction(action: SceneAction) {
         if (action is SceneAction.SmbToggle) _state.update { it.copy(smbAction = action) }
+    }
+
+    // Local change
+    fun updateMaxIobAction(action: SceneAction) {
+        if (action is SceneAction.MaxIob) _state.update { it.copy(maxIobAction = action) }
     }
 
     fun updateLoopModeAction(action: SceneAction) {
@@ -283,6 +298,7 @@ class SceneWizardViewModel(
             if (s.profileEnabled) add(s.profileAction)
             if (s.ttEnabled && s.ttAction != null) add(s.ttAction)
             if (s.smbEnabled) add(s.smbAction)
+            if (s.maxIobEnabled) add(s.maxIobAction) // Local change
             if (s.runningModeEnabled) add(s.runningModeAction)
             if (s.carePortalEnabled) add(s.carePortalAction)
         }

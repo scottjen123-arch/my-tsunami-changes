@@ -31,10 +31,41 @@ sealed class SceneAction {
     /**
      * Toggle SMB on or off.
      * @param enabled Whether SMB should be enabled
+     * @param smbPercent Local change: size of each SMB while the scene is active, in percent of
+     *   what the loop calculates. 100 = no change. Only used when [enabled] is true, and only the
+     *   Tsunami APS reads it.
      */
     data class SmbToggle(
-        val enabled: Boolean
-    ) : SceneAction()
+        val enabled: Boolean,
+        val smbPercent: Int = SMB_PERCENT_MAX
+    ) : SceneAction() {
+
+        companion object {
+
+            const val SMB_PERCENT_MIN = 10
+            const val SMB_PERCENT_MAX = 100
+            const val SMB_PERCENT_STEP = 10
+        }
+    }
+
+    /**
+     * Local change: lower max IOB while the scene is active.
+     * @param percent Max IOB in percent of the max IOB setting. 100 = no change, 0 = no IOB above
+     *   zero. It can only lower max IOB, never raise it. Only the Tsunami APS reads it, every loop
+     *   run, so it ends with the scene and needs no revert.
+     */
+    data class MaxIob(
+        val percent: Int
+    ) : SceneAction() {
+
+        companion object {
+
+            const val PERCENT_MIN = 0
+            const val PERCENT_MAX = 100
+            const val PERCENT_STEP = 10
+            const val PERCENT_DEFAULT = 70
+        }
+    }
 
     /**
      * Change the loop running mode.
