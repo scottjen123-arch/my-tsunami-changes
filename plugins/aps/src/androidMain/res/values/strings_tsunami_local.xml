@@ -7,4 +7,38 @@
     <string name="tsunami_high_bg_extra_max_iob_amount_title">Extra max IOB amount</string>
     <string name="tsunami_high_bg_extra_max_iob_amount_summary">Added to max IOB while the rule above applies. The hard limit still wins.</string>
     <string name="max_iob_scene_tsunami" comment="Ends the sentence 'Limiting IOB to %1$.1f U because of …'. %1$d=max IOB percent set in the running scene. Example: scene max IOB 60%">scene max IOB %1$d%%</string>
+    <!-- Meal detector -->
+    <string name="tsunami_meal_detector_mode_title">Meal detector</string>
+    <string name="tsunami_meal_detector_mode_summary">Watches for a fast BG rise during the detector hours. Log only writes what it would do to the loop reason and shows a notification. Auto start starts Tsunami by itself, always with smaller SMBs first, then full size when new readings confirm the rise. A notification tells you every time. It does not start while a hypo or activity temp target runs, or for 60 min after it ends, and a hypo temp target ends a session it started. It also does not start while a scene sets the SMB size below 100%. Off by default.</string>
+    <string name="tsunami_meal_detector_mode_off">Off</string>
+    <string name="tsunami_meal_detector_mode_log_only">Log only</string>
+    <string name="tsunami_meal_detector_mode_auto">Auto start</string>
+    <string name="tsunami_meal_detector_start_title">Meal detector start time</string>
+    <string name="tsunami_meal_detector_end_title">Meal detector end time</string>
+    <string name="tsunami_meal_detector_start_level_title">Meal detector start level</string>
+    <string name="tsunami_meal_detector_start_level_summary">Gross rise in mg/dL per 5 min, over 10 min, that starts Tsunami at medium confidence. The reading before those 10 min must also show a rise. Lower finds more meals, but also more rises without a meal.</string>
+    <string name="tsunami_meal_detector_min_bg_rise_title">BG must also rise at least</string>
+    <string name="tsunami_meal_detector_min_bg_rise_summary">Rise of BG itself in mg/dL per 5 min, over 10 min, that a start also needs. It stops a start when BG is flat and only the insulin on board makes the gross rise look high. Higher gives fewer starts without a meal, but finds some meals later. 0 turns this check off.</string>
+    <string name="tsunami_meal_detector_step_up_level_title">Meal detector high level</string>
+    <string name="tsunami_meal_detector_step_up_level_summary">Gross rise in mg/dL per 5 min that confirms the meal. It must be reached over the first 10 min after the start, with each reading at least 60% of it. Then Tsunami gives full size SMBs.</string>
+    <string name="tsunami_meal_detector_medium_smb_title">SMB size at medium confidence</string>
+    <string name="tsunami_meal_detector_medium_smb_summary">Percent of each SMB until the meal is confirmed.</string>
+    <string name="tsunami_meal_detector_session_title">Length of a detected session</string>
+    <string name="tsunami_meal_detector_session_summary">How long a Tsunami session started by the meal detector runs. Sessions you start yourself keep their own length.</string>
+    <string name="tsunami_meal_detector_stop_wait_title">Wait after you stop a detected session</string>
+    <string name="tsunami_meal_detector_stop_wait_summary">After you stop a session that the meal detector started, it does not start a new one for this long. 0 means no wait. You can always start a session yourself.</string>
+    <string name="tsunami_meal_detector_settings_title">Meal detector</string>
+    <string name="tsunami_meal_detector_own_settings_title">Own Tsunami settings for detected sessions</string>
+    <string name="tsunami_meal_detector_own_settings_summary">Sessions that the meal detector starts use the max SMB size, activity target and insulin required below. Sessions you start yourself keep the normal Tsunami settings. Off: detected sessions use the normal Tsunami settings too.</string>
+    <string name="tsunami_meal_detector_smb_cap_title">Max SMB size in a detected session</string>
+    <string name="tsunami_meal_detector_smb_cap_summary">Grows and shrinks with the profile percentage when SMB size scaling is on in the Tsunami mode settings.</string>
+    <string name="tsunami_meal_detector_activity_target_title">Activity target in a detected session</string>
+    <string name="tsunami_meal_detector_ins_req_title">Insulin required in a detected session</string>
+    <string name="tsunami_meal_detector_ins_req_summary">At medium confidence, the SMB size at medium confidence is applied on top of this. Example: 60% and 50% give 30% of the full SMB.</string>
+    <string name="tsunami_meal_detector_started_medium" comment="%1$.1f=gross BG rise in mg/dL per 5 min, %2$d=SMB size in percent. Example: Tsunami started by the meal detector (medium confidence, rise 3.8 mg/dL per 5 min). SMB size 50% until the meal is confirmed.">Tsunami started by the meal detector (medium confidence, rise %1$.1f mg/dL per 5 min). SMB size %2$d%% until the meal is confirmed.</string>
+    <string name="tsunami_meal_detector_stepped_up">Meal detector: the meal is confirmed. Tsunami now gives full size SMBs.</string>
+    <string name="tsunami_meal_detector_ended">Meal detector: the rise stopped, so Tsunami was ended.</string>
+    <string name="tsunami_meal_detector_ended_hypo_target">Meal detector: a hypo temp target was set, so Tsunami was ended.</string>
+    <string name="tsunami_meal_detector_log_only" comment="%1$.1f=gross BG rise in mg/dL per 5 min. Example: Meal detector (log only): a meal rise was found (rise 4.1 mg/dL per 5 min). Tsunami was not started.">Meal detector (log only): a meal rise was found (rise %1$.1f mg/dL per 5 min). Tsunami was not started.</string>
+    <string name="tsunami_meal_detector_stop">Stop Tsunami</string>
 </resources>

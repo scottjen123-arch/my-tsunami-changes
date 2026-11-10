@@ -215,7 +215,7 @@ class DetermineBasalTsunami(
     fun determine_basal(
         glucose_status: GlucoseStatus, currenttemp: CurrentTemp, iob_data_array: Array<IobTotal>, profile: OapsProfileTsunami, autosens_data: AutosensResult, meal_data: MealData,
         microBolusAllowed: Boolean, currentTime: Long, flatBGsDetected: Boolean, dynIsfMode: Boolean, recentGlucoseHistory: List<GlucoseStatus>, rawGlucoseHistory: List<GlucoseStatus>,
-        // Local change: SMB size in percent set by the running scene, see TsunamiSceneSmb
+        // Local change: SMB size in percent set by the running scene or the meal detector, see TsunamiSceneSmb
         sceneSmbPercent: Int = TsunamiSceneSmb.FULL,
         // Local change: the running scene limits max IOB (already in profile.max_iob), see TsunamiSceneMaxIob
         sceneLimitsMaxIob: Boolean = false
@@ -1580,7 +1580,7 @@ class DetermineBasalTsunami(
                     rT.reason.append("; maxBolus $maxBolus")
                 }
                 if (sceneSmbPercent < TsunamiSceneSmb.FULL) {
-                    rT.reason.append("; scene SMB size $sceneSmbPercent%: ${fullMicroBolus}U -> ${microBolus}U")
+                    rT.reason.append("; SMB size $sceneSmbPercent%: ${fullMicroBolus}U -> ${microBolus}U")
                 }
                 if (durationReq > 0) {
                     rT.reason.append("; setting ${durationReq}m low temp of ${smbLowTempReq}U/h")

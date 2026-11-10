@@ -211,7 +211,7 @@ class DetermineBasalTsunamiTest : TestBaseWithProfile() {
         // The temp basal is the one the full SMB would have left, not a bigger one
         assertThat(half.rate).isEqualTo(full.rate)
         assertThat(half.duration).isEqualTo(full.duration)
-        assertThat(half.reason.toString()).contains("scene SMB size 50%")
+        assertThat(half.reason.toString()).contains("; SMB size 50%")
     }
 
     @Test
@@ -221,6 +221,6 @@ class DetermineBasalTsunamiTest : TestBaseWithProfile() {
 
         assertThat(full.smb()).isEqualTo(normal.smb())
         assertThat(full.rate).isEqualTo(normal.rate)
-        assertThat(full.reason.toString()).doesNotContain("scene SMB size")
+        assertThat(full.reason.toString()).doesNotContain("; SMB size")
     }
 }

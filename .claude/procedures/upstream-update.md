@@ -65,6 +65,7 @@ Do this on a new branch, so `tsunami` stays usable if the merge goes badly.
 | SMB cap uses real profile % | `TsunamiSmbCapScaling.kt` | `TsunamiPlugin.kt` |
 | Scene SMB size | `TsunamiSceneSmb.kt`, `core/ui/.../strings_tsunami_local.xml` | `DetermineBasalTsunami.kt`, `TsunamiPlugin.kt`, `SceneAction.kt`, `SceneSerializer.kt`, `ActionEditors.kt`, `SceneExecutor.kt` |
 | Scene max IOB | `TsunamiSceneMaxIob.kt`, both `strings_tsunami_local.xml` | `DetermineBasalTsunami.kt`, `TsunamiPlugin.kt`, `SceneAction.kt`, `SceneSerializer.kt`, `ActionEditors.kt`, `SceneExecutor.kt`, `SceneListViewModel.kt`, `SceneWizardViewModel.kt`, `SceneWizardScreen.kt`, `SmbStep.kt` |
+| Meal detector | `TsunamiMealDetector.kt`, `TsunamiMealDetectorRunner.kt`, `TsunamiLocalKeys.kt`, `strings_tsunami_local.xml` | `TsunamiPlugin.kt`, `DetermineBasalTsunami.kt` (reason text only), `NotificationId.kt` |
 
 ## The watch changes (branch `tsunami-watch`)
 
@@ -94,3 +95,31 @@ scene starts. Tsunami reads it in every loop run:
   `TsunamiHighBgMaxIobWiringTest` (the scene test) means this line was lost.
 - The wizard shows it on the SMB step. If upstream changes the wizard steps, keep the second toggle there.
 - Builds without it skip the unknown `max_iob` type, so scenes stay readable both ways.
+
+## The meal detector (branch `tsunami-meal-detector`)
+
+Off by default. In auto mode it starts a Tsunami session by itself when it sees a fast daytime rise:
+
+- `TsunamiPlugin.invoke` calls `mealDetectorRunner.run` just **before** it reads the running session. Keep that order,
+  or a session the detector starts is only used five minutes later. The SMB size passed to `determine_basal` is the
+  smaller of the scene and the detector.
+- `NotificationId.TSUNAMI_MEAL_DETECTOR` must stay at the end of the enum. The system notification id comes from the
+  ordinal.
+- The detector only changes sessions it started itself. It finds them by the start time it keeps in preferences.
+- A detected session has its own length (`MealDetectorSessionMinutes`), not `IntKey.TsuDefaultDuration`. The detector
+  starts later in the meal than a session the user starts before eating.
+- The only wait between starts in auto mode is after the user stops a detected session (`MealDetectorStopWaitMinutes`).
+  A stop is a detected session that is gone before its planned end, which is kept in preferences. If an upstream
+  change ends Tsunami sessions in a new way (for example on a profile switch), that would count as a stop.
+- With `MealDetectorOwnSettings` on, a detected session uses its own max SMB size, activity target and insulin required
+  in place of `TsuSMBCap`, `TsuActivityTarget` and `TsuInsReqPCT`. This is the `tsunamiModeID == 2` branch of
+  `TsunamiPlugin.invoke`. If upstream adds another Tsunami session setting there, decide if detected sessions need
+  their own copy of it.
+- No start while a temp target with the reason Hypo or Activity runs, or for 60 min after it ended. A Hypo target
+  ends a detected session. Scenes and the watch presets set these reasons too, so the rule finds them by the reason
+  only. If upstream adds a new reason or changes how a scene sets its temp target, check that the rule still sees it.
+- No start while a running scene sets the SMB size below 100% (`TsunamiSceneSmb.smbPercent`). This is how the user
+  eats a small snack without a start: a scene with a smaller SMB size and nothing else. `TsunamiPlugin.invoke` reads
+  the scene SMB size once and gives it to both the detector and `determine_basal`. Keep it that way.
+- The detector settings have their own menu next to the Tsunami and Wave menus, not inside the Tsunami menu: the
+  settings UI does not draw a third menu level.

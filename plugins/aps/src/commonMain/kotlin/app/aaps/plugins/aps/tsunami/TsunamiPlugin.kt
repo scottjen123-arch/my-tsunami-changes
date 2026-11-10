@@ -113,7 +113,9 @@ open class TsunamiPlugin(
     private val ch: ConcentrationHelper,
     private val fabricPrivacy: FabricPrivacy,
     // Local change: the running scene can set the SMB size and lower max IOB, see TsunamiSceneSmb and TsunamiSceneMaxIob
-    private val activeSceneSync: ActiveSceneSync
+    private val activeSceneSync: ActiveSceneSync,
+    // Local change: starts Tsunami when it sees a meal, see TsunamiMealDetector
+    private val mealDetectorRunner: TsunamiMealDetectorRunner
 ) : PluginBaseWithPreferences(
     PluginDescription()
         .mainType(PluginType.APS)
@@ -130,7 +132,7 @@ open class TsunamiPlugin(
         .preferencesVisibleInSimpleMode(false)
         .showInList { config.APS && config.isEngineeringMode() && config.isDev() }
         .description(ApsStrings.description_tsunami),
-    ownPreferences = ApsIntentKey.entries + TsunamiLocalBooleanKey.entries + TsunamiLocalDoubleKey.entries, // Local change: extra max IOB settings
+    ownPreferences = ApsIntentKey.entries + TsunamiLocalBooleanKey.entries + TsunamiLocalDoubleKey.entries + TsunamiLocalIntKey.entries, // Local change: extra max IOB and meal detector settings
     aapsLogger, rh, preferences, notificationManager
 ), APS, PluginConstraints {
 
@@ -435,6 +437,10 @@ open class TsunamiPlugin(
 
         // Determine which mode will be active (0 = default; 1 = wave; 2 = tsunami)
         val enableWave : Boolean = preferences.get(BooleanKey.EnableWave)
+        // Local change: the meal detector can start or end a session, so it runs before the session is read
+        // Read once: the detector does not start while a scene sets a smaller SMB size, and the same value sizes the SMB below
+        val sceneSmbPercent = TsunamiSceneSmb.smbPercent(activeSceneSync.getActiveState(), now)
+        val mealDetector = mealDetectorRunner.run(now, minutesNow, profile, recentGlucoseHistory, sceneSmbPercent)
         // Read once, so the mode and its start/end time always come from the same entry
         val activeTsunami = persistenceLayer.getTsunamiActiveAt(now)
         val tsunamiModeID = activeTsunami?.tsunamiMode ?: if (waveActiveHours && enableWave) {
@@ -466,12 +472,14 @@ open class TsunamiPlugin(
 
         if (tsunamiModeID == 2) { //MP: 2 = Tsunami
             deltaReductionPCT = 1.0
-            SMBcap = preferences.get(DoubleKey.TsuSMBCap) //MP: User-set max SMB size for Tsunami.
+            // Local change: a session the meal detector started can have its own settings
+            val own = mealDetector.ownSettings
+            SMBcap = own?.smbCap ?: preferences.get(DoubleKey.TsuSMBCap) //MP: User-set max SMB size for Tsunami.
             if (preferences.get(BooleanKey.TsuSMBscaling)) {
                 SMBcap = TsunamiSmbCapScaling.scaledSmbCap(SMBcap, epsProfile.value.originalPercentage) //SMBcap grows and shrinks with profile percentage;
             }
-            insulinReqPCT = preferences.get(IntKey.TsuInsReqPCT).toDouble() / 100.0 // User-set percentage to modify insulin required
-            activityTarget = preferences.get(IntKey.TsuActivityTarget).toDouble() / 100.0 // MP for small deltas
+            insulinReqPCT = (own?.insulinReqPercent ?: preferences.get(IntKey.TsuInsReqPCT)).toDouble() / 100.0 // User-set percentage to modify insulin required
+            activityTarget = (own?.activityTarget ?: preferences.get(IntKey.TsuActivityTarget)).toDouble() / 100.0 // MP for small deltas
         } else if (tsunamiModeID == 1) { //MP: 1 = Wave
             deltaReductionPCT = 0.5
             SMBcap = preferences.get(DoubleKey.WaveSMBCap) //MP: User-set may SMB size for Wave.
@@ -637,9 +645,12 @@ open class TsunamiPlugin(
             dynIsfMode = effectiveDynIsfMode,
             recentGlucoseHistory = recentGlucoseHistory,
             rawGlucoseHistory = rawGlucoseHistory,
-            sceneSmbPercent = TsunamiSceneSmb.smbPercent(activeSceneSync.getActiveState(), now),
+            sceneSmbPercent = min(sceneSmbPercent, mealDetector.smbPercent), // Local change: the smaller of scene and meal detector
             sceneLimitsMaxIob = TsunamiSceneMaxIob.percent(activeSceneSync.getActiveState(), now) != null, // Local change
         ).also {
+            // Local change: show what the meal detector did
+            mealDetector.reason?.let { line -> it.reason.insert(0, "$line. ") }
+            mealDetector.console?.let { line -> it.consoleError?.add(line) }
             val determineBasalResult = apsResultProvider().with(it)
             // Preserve input data
             determineBasalResult.inputConstraints = inputConstraints
@@ -747,6 +758,27 @@ open class TsunamiPlugin(
                     ApsIntentKey.TsunamiAdvancedDisclaimer.withClick { },
                     IntKey.TsuActivityTarget,
                     IntKey.TsuInsReqPCT
+                )
+            ),
+            // Local change: meal detector. Its own menu, at the same level as Tsunami and Wave, because a third
+            // menu level is not drawn by the settings UI.
+            PreferenceSubScreenDef(
+                key = "meal_detector_settings",
+                title = ApsStrings.tsunami_meal_detector_settings_title,
+                items = listOf(
+                    TsunamiLocalIntKey.MealDetectorMode,
+                    TsunamiLocalIntKey.MealDetectorStart,
+                    TsunamiLocalIntKey.MealDetectorEnd,
+                    TsunamiLocalDoubleKey.MealDetectorStartLevel,
+                    TsunamiLocalDoubleKey.MealDetectorMinBgRise,
+                    TsunamiLocalDoubleKey.MealDetectorStepUpLevel,
+                    TsunamiLocalIntKey.MealDetectorMediumSmbPercent,
+                    TsunamiLocalIntKey.MealDetectorSessionMinutes,
+                    TsunamiLocalIntKey.MealDetectorStopWaitMinutes,
+                    TsunamiLocalBooleanKey.MealDetectorOwnSettings,
+                    TsunamiLocalDoubleKey.MealDetectorSmbCap,
+                    TsunamiLocalIntKey.MealDetectorActivityTarget,
+                    TsunamiLocalIntKey.MealDetectorInsReqPercent
                 )
             ),
             PreferenceSubScreenDef(
